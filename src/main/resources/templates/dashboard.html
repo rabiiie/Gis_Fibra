@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+  <title layout:fragment="title">Advanced Dashboard - Insyte Soluciones App</title>
+
+  <th:block layout:fragment="styles">
+    <style>
+      /* Dashboard styles */
+      .section-title {
+        margin-bottom: 1rem;
+      }
+      /* Chart control */
+      .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+      }
+      .distribution-chart-container {
+        height: 250px;
+      }
+      .card-body {
+        position: relative;
+      }
+      canvas {
+        width: 100% !important;
+        height: 100% !important;
+      }
+      /* Metric cards */
+      .metric-card {
+        color: #fff;
+        border-radius: 0.5rem;
+        overflow: hidden;
+      }
+      .card-value {
+        font-size: 1.6rem;
+        font-weight: bold;
+        margin: 0;
+      }
+      /* Card gradients */
+      .gradient-1 { background: linear-gradient(135deg, #36D1DC, #5B86E5); }
+      .gradient-2 { background: linear-gradient(135deg, #11998e, #38ef7d); }
+      .gradient-3 { background: linear-gradient(135deg, #ff6b6b, #f94d6a); }
+      .gradient-4 { background: linear-gradient(135deg, #FFC371, #FF5F6D); }
+      .gradient-5 { background: linear-gradient(135deg, #8E54E9, #4776E6); }
+      .gradient-6 { background: linear-gradient(135deg, #fbc2eb, #a18cd1); }
+      .gradient-7 { background: linear-gradient(135deg, #c31432, #240b36); }
+      .gradient-8 { background: linear-gradient(135deg, #1c92d2, #f2fcfe); }
+      .gradient-9 { background: linear-gradient(135deg, #fc4a1a, #f7b733); }
+
+      #timelineChart {
+        height: 300px !important;
+      }
+      .row.g-4 > [class*='col-'] {
+        padding-left: .5rem;
+        padding-right: .5rem;
+      }
+      .last-update-info {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-top: 0.5rem;
+      }
+      .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+    </style>
+  </th:block>
+</head>
+<body>
+<div layout:fragment="content">
+
+  <!-- NAV TABS -->
+  <ul class="nav nav-pills mb-4 gap-2" id="dashboardTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#generalDashboard" type="button" role="tab">
+        <i class="bi bi-speedometer2 me-2"></i>General
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="pill" data-bs-target="#civilWorksDashboard" type="button" role="tab">
+        <i class="bi bi-cone-striped me-2"></i>Civil Works
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="pill" data-bs-target="#contractsDashboard" type="button" role="tab">
+        <i class="bi bi-file-earmark-text me-2"></i>Contracts
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="pill" data-bs-target="#cablesDashboard" type="button" role="tab">
+        <i class="bi bi-lightning-charge me-2"></i>Cables
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="pill" data-bs-target="#timelineDashboard" type="button" role="tab">
+        <i class="bi bi-calendar-range me-2"></i>Timeline
+      </button>
+    </li>
+  </ul>
+
+  <!-- TAB CONTENT -->
+  <div class="tab-content">
+    <!-- GENERAL DASHBOARD -->
+    <div class="tab-pane fade show active" id="generalDashboard" role="tabpanel">
+      <div class="row g-4">
+        <!-- Card 1 -->
+        <div class="col-xxl-3 col-md-6">
+          <div class="card metric-card gradient-1 h-100">
+            <div class="card-body">
+              <h5 class="card-title text-white">Total Projects</h5>
+              <h2 class="card-value">248</h2>
+              <span class="badge bg-success">+12% vs last month</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="col-xxl-3 col-md-6">
+          <div class="card metric-card gradient-2 h-100">
+            <div class="card-body">
+              <h5 class="card-title text-white">Active Teams</h5>
+              <h2 class="card-value">18</h2>
+              <span class="badge bg-warning">3 delayed</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Project Distribution Chart -->
+        <div class="col-xxl-6">
+          <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+              <div class="chart-header">
+                <h5 class="card-title">Project Distribution</h5>
+                <small class="last-update-info"></small>
+              </div>
+              <div class="chart-container distribution-chart-container">
+                <canvas id="projectDistributionChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CIVIL WORKS DASHBOARD -->
+    <div class="tab-pane fade" id="civilWorksDashboard" role="tabpanel">
+      <div class="row g-4">
+        <div class="col-md-6 col-lg-3">
+          <div class="card metric-card gradient-3">
+            <div class="card-body">
+              <h5 class="card-title text-white">Meters Built</h5>
+              <h2 class="card-value">1,850km</h2>
+              <div class="progress mt-1" style="height: 4px;">
+                <div class="progress-bar bg-info" style="width: 75%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <div class="card metric-card gradient-4">
+            <div class="card-body">
+              <h5 class="card-title text-white">Progress</h5>
+              <h2 class="card-value">82%</h2>
+              <div class="progress mt-1" style="height: 4px;">
+                <div class="progress-bar bg-success" style="width: 82%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Construction Timeline -->
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+              <div class="chart-header">
+                <h5 class="card-title">Construction Timeline</h5>
+                <small class="last-update-info"></small>
+              </div>
+              <div class="chart-container">
+                <canvas id="civilWorksTimeline"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Issues by Type -->
+        <div class="col-12">
+          <div class="card">
+            <div class="card-body d-flex flex-column">
+              <div class="chart-header">
+                <h5 class="card-title">Issues by Type</h5>
+                <small class="last-update-info"></small>
+              </div>
+              <div class="chart-container">
+                <canvas id="civilWorksIssues"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTRACTS DASHBOARD -->
+    <div class="tab-pane fade" id="contractsDashboard" role="tabpanel">
+      <div class="row g-4">
+        <!-- Cards summary -->
+        <div class="col-md-6 col-xl-3">
+          <div class="card metric-card gradient-5 h-100">
+            <div class="card-body">
+              <h5 class="card-title text-white">Active Contracts</h5>
+              <h2 class="card-value" id="activeContracts">16</h2>
+              <span class="text-white-50">Total value: €2.5M</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+          <div class="card metric-card gradient-6 h-100">
+            <div class="card-body">
+              <h5 class="card-title text-white">Pending Approvals</h5>
+              <h2 class="card-value" id="pendingContracts">7</h2>
+              <span class="text-danger">2 overdue</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="col-xl-6">
+          <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+              <div class="chart-header">
+                <h5 class="card-title">Contract Values</h5>
+                <small class="last-update-info"></small>
+              </div>
+              <div class="chart-container">
+                <canvas id="contractsValueChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+              <div class="chart-header">
+                <h5 class="card-title">Contract Status Distribution</h5>
+                <small class="last-update-info"></small>
+              </div>
+              <div class="chart-container">
+                <canvas id="contractStatusChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CABLES DASHBOARD -->
+    <div class="tab-pane fade" id="cablesDashboard" role="tabpanel">
+      <div class="row g-4">
+        <div class="col-md-6 col-lg-3">
+          <div class="card metric-card gradient-7 h-100">
+            <div class="card-body">
+              <h5 class="card-title text-white">Total Cable</h5>
+              <h2 class="card-value">2,450km</h2>
+              <span class="text-success">+15% vs target</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <div class="card metric-card gradient-8 h-100">
+            <div class="card-body">
+              <h5 class="card-title text-dark">Installed Today</h5>
+              <h2 class="card-value text-dark">18km</h2>
+              <span class="text-muted">7 teams active</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Installation Progress -->
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+              <div class="chart-header">
+                <h5 class="card-title">Installation Progress</h5>
+                <small class="last-update-info"></small>
+              </div>
+              <div class="chart-container">
+                <canvas id="cableProgressChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cable Types -->
+        <div class="col-12">
+          <div class="card">
+            <div class="card-body d-flex flex-column">
+              <div class="chart-header">
+                <h5 class="card-title">Cable Types Distribution</h5>
+                <small class="last-update-info"></small>
+              </div>
+              <div class="chart-container">
+                <canvas id="cableTypesChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TIMELINE DASHBOARD -->
+    <div class="tab-pane fade" id="timelineDashboard" role="tabpanel">
+      <div class="row g-2">
+        <div class="col-6 col-md-4 col-lg-3">
+          <div class="card metric-card gradient-9 mb-2">
+            <div class="card-body p-2">
+              <div class="d-flex align-items-center">
+                <i class="bi bi-clipboard-data fs-5 me-2"></i>
+                <div>
+                  <h6 class="card-title mb-0">Current Phase</h6>
+                  <div class="d-flex align-items-baseline">
+                    <h4 class="card-value mb-0 me-2">Design</h4>
+                    <small class="text-muted">2/5</small>
+                  </div>
+                </div>
+              </div>
+              <div class="progress mt-1" style="height: 4px;">
+                <div class="progress-bar" style="width: 40%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Timeline -->
+        <div class="col-12 mt-3">
+          <div class="card">
+            <div class="card-body d-flex flex-column">
+              <div class="chart-header">
+                <h5 class="card-title">Project Timeline</h5>
+                <small class="last-update-info"></small>
+              </div>
+              <div class="chart-container">
+                <canvas id="timelineChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Milestones -->
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Upcoming Milestones</h5>
+              <div class="milestones-list">
+                <div class="milestone-item mb-3 d-flex align-items-center">
+                  <div class="badge bg-primary me-3">15 Jun</div>
+                  <div>
+                    <h6 class="mb-0">Design Approval</h6>
+                    <small class="text-muted">Client sign-off required</small>
+                  </div>
+                </div>
+                <div class="milestone-item mb-3 d-flex align-items-center">
+                  <div class="badge bg-success me-3">01 Jul</div>
+                  <div>
+                    <h6 class="mb-0">Construction Start</h6>
+                    <small class="text-muted">Phase 2B commences</small>
+                  </div>
+                </div>
+              </div>
+              <small class="last-update-info d-block mt-3"></small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dependencies -->
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Critical Path</h5>
+              <div class="table-responsive">
+                <table class="table table-sm">
+                  <thead>
+                  <tr>
+                    <th>Task</th>
+                    <th>Dependencies</th>
+                    <th>Status</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <tr>
+                    <td>Design Approval</td>
+                    <td>Planning</td>
+                    <td><span class="badge bg-warning">Pending</span></td>
+                  </tr>
+                  <tr>
+                    <td>Construction Start</td>
+                    <td>Design Approval</td>
+                    <td><span class="badge bg-secondary">Not Started</span></td>
+                  </tr>
+                  </tbody>
+                </table>
+              </div>
+              <small class="last-update-info d-block mt-3"></small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts específicos del dashboard -->
+<th:block layout:fragment="scripts">
+  <script th:src="@{/js/dashboard.js}"></script>
+</th:block>
+</body>
+</html>

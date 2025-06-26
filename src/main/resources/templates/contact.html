@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+
+<head>
+    <title layout:fragment="title">Contacto</title>
+
+    <th:block layout:fragment="styles">
+        <style>
+            body {
+                background-color: #f4f6f9;
+            }
+
+            #contactSection {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding: 40px 20px;
+                min-height: calc(100vh - 120px); /* Ajusta al alto visible sin footer/header */
+            }
+
+            .contact-card {
+                background: white;
+                padding: 2rem;
+                border-radius: 10px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                max-width: 600px;
+                width: 100%;
+            }
+
+            .contact-card h2 {
+                font-size: 1.8rem;
+                margin-bottom: 1rem;
+                font-weight: 600;
+                text-align: center;
+            }
+
+            .btn-primary {
+                width: 100%;
+            }
+        </style>
+    </th:block>
+</head>
+
+<th:block layout:fragment="content">
+    <!-- CONTACT SECTION -->
+    <section id="contactSection">
+        <div class="contact-card">
+            <h2>Contact</h2>
+            <p class="mb-4 text-center">¿Tienes dudas o quieres contactarnos? Envía un mensaje:</p>
+            <form id="contactForm">
+                <div class="mb-3">
+                    <label for="contactName" class="form-label">Nombre</label>
+                    <input type="text" class="form-control" id="contactName" required />
+                </div>
+                <div class="mb-3">
+                    <label for="contactEmail" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="contactEmail" required />
+                </div>
+                <div class="mb-3">
+                    <label for="contactMsg" class="form-label">Mensaje</label>
+                    <textarea class="form-control" id="contactMsg" rows="5" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Enviar</button>
+            </form>
+        </div>
+    </section>
+    <!-- End CONTACT SECTION -->
+</th:block>
+
+<th:block layout:fragment="scripts">
+    <script th:src="@{/js/contact.js}" defer></script>
+</th:block>
+
+</html>

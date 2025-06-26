@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+
+<head>
+    <title layout:fragment="title">Llamadas a API</title>
+</head>
+
+<th:block layout:fragment="content">
+    <section id="apiButtonsSection" class="container mt-5">
+        <div class="row">
+            <!-- Civil Works API -->
+            <div class="col-md-4">
+                <div class="card api-card shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="bi bi-tools icon-lg"></i>
+                        <h5 class="card-title mt-2">Civil Works API</h5>
+                        <p class="card-text">Consulta datos de obra civil en fibra óptica.</p>
+                        <button id="btnCivilWorksAPI" class="btn btn-primary">
+                            <i class="bi bi-arrow-right-circle"></i> Acceder
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Addresses API -->
+            <div class="col-md-4">
+                <div class="card api-card shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="bi bi-map icon-lg"></i>
+                        <h5 class="card-title mt-2">Addresses API</h5>
+                        <p class="card-text">Accede a datos de direcciones y ubicaciones.</p>
+                        <button id="btnAddressesAPI" class="btn btn-secondary">
+                            <i class="bi bi-arrow-right-circle"></i> Acceder
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Blown Fiber API -->
+            <div class="col-md-4">
+                <div class="card api-card shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="bi bi-wind icon-lg"></i>
+                        <h5 class="card-title mt-2">Blown Fiber API</h5>
+                        <p class="card-text">Consulta el estado de la fibra soplada.</p>
+                        <button id="btnBlownFiberAPI" class="btn btn-info">
+                            <i class="bi bi-arrow-right-circle"></i> Acceder
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ducts API -->
+            <div class="col-md-4">
+                <div class="card api-card shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="bi bi-pipe icon-lg"></i>
+                        <h5 class="card-title mt-2">Ducts API</h5>
+                        <p class="card-text">Información sobre ductos y canalizaciones.</p>
+                        <button id="btnDuctsAPI" class="btn btn-success">
+                            <i class="bi bi-arrow-right-circle"></i> Acceder
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contracts API -->
+            <div class="col-md-4">
+                <div class="card api-card shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="bi bi-file-earmark-text icon-lg"></i>
+                        <h5 class="card-title mt-2">Contracts API</h5>
+                        <p class="card-text">Gestión de contratos con proveedores.</p>
+                        <button id="btnContractsAPI" class="btn btn-warning">
+                            <i class="bi bi-arrow-right-circle"></i> Acceder
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HBG API -->
+            <div class="col-md-4">
+                <div class="card api-card shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="bi bi-building icon-lg"></i>
+                        <h5 class="card-title mt-2">HBG API</h5>
+                        <p class="card-text">Información sobre edificios conectados.</p>
+                        <button id="btnHBGAPI" class="btn btn-danger">
+                            <i class="bi bi-arrow-right-circle"></i> Acceder
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenedor para mostrar resultados de las APIs -->
+        <div id="apiResults" class="mt-4 p-3 bg-white border rounded"></div>
+    </section>
+</th:block>
+
+<th:block layout:fragment="scripts">
+    <!-- Bibliotecas externas -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" defer></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js" defer></script>
+
+    <!-- Script propio -->
+    <script th:src="@{/js/home.js}" defer></script>
+</th:block>
+
+</html>

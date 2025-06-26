@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title layout:fragment="title">Insyte Projects Dashboard</title>
+
+    <!-- Estilos adicionales -->
+	<th:block layout:fragment="styles">
+	    <!-- CSS de Leaflet -->
+	    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+	    
+	    <!-- ✅ Tu nuevo CSS global de HomeStyles -->
+	    <link rel="stylesheet" th:href="@{/css/HomeStyles.css}" />
+	    
+	    <style>
+	        /* Ajuste de padding lateral */
+	        #homeSection.container-fluid {
+	            padding-left: 0.5rem;
+	            padding-right: 0.5rem;
+	        }
+	        /* Ajuste del logo para que no exceda la altura de la barra */
+	        .navbar-brand img {
+	            max-height: 2.5rem;
+	            width: auto;
+	            object-fit: contain;
+	        }
+	        /* Suavizado y nitidez de texto */
+	        body {
+	            -webkit-font-smoothing: antialiased;
+	            -moz-osx-font-smoothing: grayscale;
+	            text-rendering: optimizeLegibility;
+	        }
+	        /* Asegurar que los canvas de Chart.js usen DPR para evitar blur */
+	        canvas {
+	            image-rendering: optimizeQuality;
+	        }
+	    </style>
+	</th:block>
+    
+</head>
+
+<body>
+
+<!-- Contenido principal -->
+<th:block layout:fragment="content">
+    <section id="homeSection" class="container-fluid">
+        <div class="row g-3">
+            <!-- KPI Cards -->
+            <div class="col-md-3">
+                <div class="card shadow-sm p-3">
+                    <h6>📊 Total Obras Civiles 2025</h6>
+                    <h3 id="totalCivilWorks" th:text="${totalCivilWorks}">1750</h3>
+                    <small>+5% desde el mes pasado</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card shadow-sm p-3">
+                    <h6>🚧 Metros Construidos</h6>
+                    <h3 id="totalMeters" th:text="${totalMeters} + ' m'">566000 m</h3>
+                    <small>566 km</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card shadow-sm p-3">
+                    <h6>📍 Proyectos Activos 2025</h6>
+                    <h3 id="activeProjects" th:text="${activeProjects}">66</h3>
+                    <small>DGF, UGG, Glasfaser</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card shadow-sm p-3">
+                    <h6>✅ Proyectos Completados</h6>
+                    <h3 id="completedProjects" th:text="${completedProjects}">357</h3>
+                    <small>Última semana: +3</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráficos fila 1 -->
+        <div class="row g-3 mt-4">
+            <div class="col-md-6">
+                <div class="card shadow-lg p-3" style="height: 400px;">
+                    <h5>📈 Distribución de Obra Civil</h5>
+                    <canvas id="chartByClient"></canvas>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card shadow-lg p-3" style="height: 400px;">
+                    <h5>📍 Progreso de Construcción</h5>
+                    <canvas id="chartProgress"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráficos fila 2 -->
+        <div class="row g-3 mt-4">
+            <div class="col-md-6">
+                <div class="card shadow-lg p-3" style="height: 500px;">
+                    <h5>🏠 Estado de Activaciones</h5>
+                    <canvas id="chartActivations"></canvas>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card shadow-lg p-3" style="height: 500px;">
+                    <h5>👷 Rendimiento por Subcontratista</h5>
+                    <canvas id="chartSubcontractorPerformance"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+</th:block>
+
+<!-- Scripts -->
+<th:block layout:fragment="scripts">
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
+    <script th:src="@{/js/homepage.js}" defer></script>
+</th:block>
+
+</body>
+</html>

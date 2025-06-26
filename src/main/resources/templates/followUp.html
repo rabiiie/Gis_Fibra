@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+
+<head>
+    <title layout:fragment="title">Follow Up</title>
+</head>
+
+<body>
+<div layout:fragment="content">
+    <section id="followUpSection" class="container my-5">
+        <div class="row g-4">
+            <!-- Card: Glasfaser Plus -->
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-primary text-white">
+                        <i class="bi bi-building me-2"></i> Glasfaser Plus
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-diagram-3-fill text-secondary me-2"></i><a th:href="@{/gplus/kfu}" class="text-decoration-none">KFU</a></li>
+                            <li><i class="bi bi-clipboard-data text-secondary me-2"></i><a th:href="@{/gplus/ar}" class="text-decoration-none">AR</a></li>
+                            <li><i class="bi bi-journal-text text-secondary me-2"></i><a th:href="@{/gplus/reports}" class="text-decoration-none">Reports</a></li>
+                            <li><i class="bi bi-download text-secondary me-2"></i><a th:href="@{/gplus/downloads}" class="text-decoration-none">Downloads</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card: Deutsche Glasfaser -->
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-info text-white">
+                        <i class="bi bi-building-fill-gear me-2"></i> Deutsche Glasfaser
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-diagram-3-fill text-secondary me-2"></i><a th:href="@{/reports/planr}" class="text-decoration-none">Planrrr Summary</a></li>
+                            <li><i class="bi bi-clipboard-data text-secondary me-2"></i><a th:href="@{/comparison}" class="text-decoration-none">ARweb Check</a></li>
+                            <li><i class="bi bi-journal-text text-secondary me-2"></i><a th:href="@{/reports}" class="text-decoration-none">Reports</a></li>
+                            <li><i class="bi bi-download text-secondary me-2"></i><a th:href="@{/dg/downloads}" class="text-decoration-none">Downloads</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card: UGG -->
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-success text-white">
+                        <i class="bi bi-building-check me-2"></i> UGG
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-diagram-3-fill text-secondary me-2"></i><a th:href="@{/ugg/kfu}" class="text-decoration-none">KFU</a></li>
+                            <li><i class="bi bi-clipboard-data text-secondary me-2"></i><a th:href="@{/ugg/ar}" class="text-decoration-none">AR</a></li>
+                            <li><i class="bi bi-journal-text text-secondary me-2"></i><a th:href="@{/ugg/reports}" class="text-decoration-none">Reports</a></li>
+                            <li><i class="bi bi-download text-secondary me-2"></i><a th:href="@{/ugg/downloads}" class="text-decoration-none">Downloads</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+</body>
+</html>

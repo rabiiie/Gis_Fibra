@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestión Avanzada de Proyectos QGIS</title>
+
+  <!-- Bootstrap 5 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+
+  <!-- Leaflet y plugins -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+
+  <style>
+    body { background-color: #f8f9fa; }
+    .sidebar {
+      width: 300px;
+      height: 100vh;
+      overflow-y: auto;
+      background-color: #343a40;
+      color: white;
+      padding: 1rem;
+    }
+    .label-text {
+	  background: rgba(255, 255, 255, 0.85);  /* halo blanco */
+	  color: #222;
+	  font-weight: 500;
+	  padding: 1px 6px;
+	  border-radius: 3px;
+	  border: 1px solid #ccc;
+	  font-family: 'Segoe UI', sans-serif;
+	  white-space: nowrap;
+	  font-size: 12px;
+	  box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);  /* efecto halo sutil */
+	  transition: font-size 0.2s;
+	  pointer-events: none;
+	}
+    
+    
+    .sidebar .list-group-item { cursor: pointer; }
+    .main-content { flex: 1; padding: 1rem; }
+    #map { width: 100%; height: calc(100vh - 100px); }
+    .card-header-custom { background-color: #0d6efd; color: #fff; }
+    .btn-report { background-color: #dc3545; color: #fff; }
+    .file-input {
+      color: #343a40;
+    }
+  </style>
+</head>
+<body>
+  <div class="d-flex">
+    <div class="sidebar">
+      <h4 class="text-center">📍 Proyectos QGIS</h4>
+      <div class="d-grid gap-2 mb-3">
+        <button class="btn btn-success" onclick="addProject()">+ Añadir Proyecto</button>
+        <button class="btn btn-report" onclick="enableDrawing()">Add New Report</button>
+      </div>
+
+      <!-- Selector mapas base -->
+      <h5 class="text-center mt-3">Mapas Base</h5>
+      <select id="basemapSelector" class="form-select mb-3" onchange="switchBaseMap(this.value)">
+        <option value="osm">OpenStreetMap</option>
+        <option value="satellite">ESRI Satélite</option>
+      </select>
+
+      <!-- Geolocalización -->
+      <div class="d-grid gap-2 mb-3">
+        <button class="btn btn-info" onclick="locateMe()">📍 Mi Ubicación</button>
+      </div>
+
+      <!-- Medición -->
+      <h5 class="text-center mt-3">Medir</h5>
+      <div class="d-grid gap-2 mb-3">
+        <button class="btn btn-warning" id="measureBtn">📏 Activar Medición</button>
+      </div>
+
+      <!-- Búsqueda -->
+      <h5 class="text-center mt-3">Buscar Dirección</h5>
+      <div id="geocoder" class="mb-3"></div>
+
+      <!-- Carga GeoJSON -->
+      <h5 class="text-center mt-3">Cargar GeoJSON</h5>
+      <input type="file" accept=".geojson" class="form-control file-input mb-3" onchange="loadGeoJSONFile(event)">
+
+      <!-- Exportación GeoJSON -->
+      <div class="d-grid gap-2 mb-3">
+        <button class="btn btn-secondary" onclick="exportGeoJSON()">💾 Exportar Capas</button>
+      </div>
+
+      <!-- Controles originales -->
+      <h5 class="text-center mt-3">Clientes (Buildings)</h5>
+      <div class="d-grid gap-2 mb-2">
+        <button id="btnBuildings" class="btn btn-secondary" onclick="toggleBuildings()">🏠 Mostrar Clientes</button>
+        <input id="buildingsOpacity" type="range" min="0" max="1" step="0.05" value="0.8"
+               class="form-range" oninput="updateBuildingsOpacity(this.value)">
+      </div>
+
+      <h5 class="text-center mt-3">Catastro</h5>
+      <div class="d-grid gap-2 mb-2">
+        <button id="btnCataster" class="btn btn-info" onclick="toggleCataster()">🖼️ Mostrar Catastro</button>
+        <input id="catasterOpacity" type="range" min="0" max="1" step="0.05" value="0.7"
+               class="form-range" oninput="updateCatasterOpacity(this.value)">
+      </div>
+      <button id="btnLabels" class="btn btn-secondary mb-2" onclick="toggleLabels()">🔤 Ocultar Labels</button>
+
+      <h5 class="text-center mt-3">Capas Proyectos</h5>
+      <button class="btn btn-warning w-100 mb-2" onclick="toggleTrenchLayer()">🔁 Mostrar/Ocultar Trench</button>
+      <div class="list-group mb-3" id="projectsList"></div>
+      <p class="text-center"><strong>Village seleccionado:</strong>
+        <span th:text="${village}">No definido</span>
+      </p>
+    </div>
+
+    <div class="main-content w-100">
+      <div class="card">
+        <div class="card-header card-header-custom">
+          <h2 class="mb-0">Mapa de Proyectos QGIS</h2>
+        </div>
+        <div class="card-body p-0">
+          <div id="map"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts necesarios -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+  <script src="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.js"></script>
+  <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
+  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.1/proj4.js"></script>
+
+  <script>
+    // Definiciones de proyecciones
+    proj4.defs('EPSG:4326', '+proj=longlat +datum=WGS84 +no_defs');
+    proj4.defs('EPSG:25832','+proj=utm +zone=32 +ellps=GRS80 +datum=ETRS89 +units=m +no_defs');
+  </script>
+
+  <script>
+  let map, baseMaps, overlays;
+  let projectMarkers = [], trenchLayer = null;
+  let drawnItems = new L.FeatureGroup(), drawControl;
+  let catasterLayer = null, catasterVisible = false;
+  let buildingsLayer = null, buildingsVisible = false;
+  const labelLayers = [];
+  let labelsVisible = true;
+  let measureControl, measureOn = false;
+  let osmLayer, satLayer;
+
+  function initMap() {
+    // Mapa base
+    map = L.map('map', { maxZoom: 22, fullscreenControl: true }).setView([48.2082, 16.3738], 6);
+
+    osmLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors",
+      maxZoom: 19,
+      minZoom: 6,
+    }).addTo(map);
+
+    satLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/" +
+      "World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+      attribution: "Tiles &copy; Esri"
+    });
+
+    // BaseMaps y Overlays
+    baseMaps = { "OSM": osmLayer, "Satélite": satLayer };
+    overlays = { "Proyectos": drawnItems /* más overlays si quieres */ };
+    L.control.layers(baseMaps, overlays, { collapsed: false }).addTo(map);
+
+    // Escala
+    L.control.scale().addTo(map);
+
+    // Geolocalización
+    // inicializado en locateMe()
+
+    // Medición
+    measureControl = new L.Control.Measure({ primaryLengthUnit: 'meters', primaryAreaUnit: 'sqmeters' });
+    // no agregamos al init, lo añadimos al pulsar botón
+
+    // Geocoder
+    L.Control.geocoder({ placeholder: 'Buscar…' }).addTo(map);
+
+ // Draw
+    drawnItems.addTo(map);
+
+    drawControl = new L.Control.Draw({
+      edit: { featureGroup: drawnItems },
+      draw: {
+        polyline: true,
+        polygon: false,
+        rectangle: false,
+        circle: false,
+        circlemarker: false,
+        marker: false
+      }
+    });
+
+    map.addControl(drawControl);  // << NECESARIO para mostrar el control
+
+    map.on(L.Draw.Event.CREATED, e => {
+      drawnItems.addLayer(e.layer);
+      saveNewReport(e.layer.toGeoJSON());
+    });
+
+
+    // Cargar proyectos
+    loadProjects();
+  }
+
+  // Basemap switcher
+  function switchBaseMap(val) {
+    if (val === 'osm') {
+      map.addLayer(osmLayer).removeLayer(satLayer);
+    } else {
+      map.addLayer(satLayer).removeLayer(osmLayer);
+    }
+  }
+
+  // Geoloc
+  function locateMe() {
+    map.locate({ setView: true, maxZoom: 16 });
+    map.once('locationfound', e => {
+      L.marker(e.latlng).addTo(map).bindPopup("Aquí estás").openPopup();
+    });
+    map.once('locationerror', () => alert("No se pudo determinar tu ubicación"));
+  }
+
+  // Medición toggle
+  document.getElementById('measureBtn').onclick = () => {
+  const btn = document.getElementById('measureBtn');
+
+  if (!measureOn) {
+    measureControl = new L.Control.Measure({
+      primaryLengthUnit: 'meters',
+      primaryAreaUnit: 'sqmeters',
+      activeColor: '#db4a29',
+      completedColor: '#9b2d14'
+    });
+    measureControl.addTo(map);
+    measureOn = true;
+    btn.textContent = '📐 Desactivar Medición';
+
+    // Desactiva popups/tooltip para evitar interferencias
+    disablePopups();
+    
+    // Evita propagación en capas activas
+    map.eachLayer(layer => {
+      layer.on('click', e => {
+        if (measureOn) {
+          L.DomEvent.stopPropagation(e);
+        }
+      });
+    });
+
+  } else {
+    map.removeControl(measureControl);
+    measureControl = null;
+    measureOn = false;
+    btn.textContent = '📏 Activar Medición';
+
+    // Vuelve a activar popups/tooltip
+    enablePopups();
+  }
+};
+
+// Funciones auxiliares para evitar conflictos de medición
+function disablePopups() {
+  map.eachLayer(layer => {
+    if (layer._popup) {
+      layer._popupContentBackup = layer._popup.getContent();
+      layer.unbindPopup();
+    }
+    if (layer.unbindTooltip) layer.unbindTooltip();
+  });
+}
+
+function enablePopups() {
+  map.eachLayer(layer => {
+    if (layer._popupContentBackup) {
+      layer.bindPopup(layer._popupContentBackup);
+      delete layer._popupContentBackup;
+    }
+  });
+}
+
+function loadGeoJSONFile(evt) {
+	  const file = evt.target.files[0];
+	  if (!file) return;
+
+	  const reader = new FileReader();
+	  reader.onload = function (e) {
+	    try {
+	      const geojson = JSON.parse(e.target.result);
+	      const features = geojson.features || [];
+
+	      // 1) Extraemos todos los type únicos
+	      const types = Array.from(
+	        new Set(
+	          features
+	            .map(f => f.properties.type)
+	            .filter(t => typeof t === "string")
+	        )
+	      );
+
+	      // 2) Definimos una paleta de colores (añade o cambia tantos como necesites)
+	      const palette = [
+	        "#1f77b4","#ff7f0e","#2ca02c","#d62728",
+	        "#9467bd","#e377c2","#7f7f7f","#8c564b"
+	      ];
+
+	      // 3) Creamos un map type→color
+	      const typeColorMap = {};
+	      types.forEach((t, i) => {
+	        typeColorMap[t] = palette[i % palette.length];
+	      });
+
+	      // 4) Cargamos la capa con estilo dinámico
+	      const layer = L.geoJSON(geojson, {
+	        style: feature => {
+	          const t = feature.properties.type;
+	          return {
+	            color: typeColorMap[t] || "#cccccc",
+	            weight: 3,
+	            opacity: 0.9
+	          };
+	        },
+	        pointToLayer: (feature, latlng) =>
+	          L.circleMarker(latlng, {
+	            radius: 6,
+	            fillColor: typeColorMap[feature.properties.type] || "#f03",
+	            fillOpacity: 0.7,
+	            color: "#000"
+	          }),
+	        onEachFeature: (feature, layer) => {
+	          layer.bindPopup(
+	            `<b>Type:</b> ${feature.properties.type}<br>` +
+	            `<b>Length:</b> ${feature.properties.length_m.toFixed(2)} m`
+	          );
+	        }
+	      }).addTo(map);
+
+	      // 5) (Opcional) Legend
+	      const legend = L.control({ position: "bottomright" });
+	      legend.onAdd = () => {
+	        const div = L.DomUtil.create("div", "info legend");
+	        types.forEach(t => {
+	          const c = typeColorMap[t];
+	          div.innerHTML +=
+	            `<i style="background:${c};width:18px;height:18px;display:inline-block;margin-right:8px;"></i>` +
+	            `${t}<br>`;
+	        });
+	        return div;
+	      };
+	      legend.addTo(map);
+
+	      // Centrar mapa
+	      if (layer.getBounds && layer.getBounds().isValid()) {
+	        map.fitBounds(layer.getBounds());
+	      } else {
+	        alert("⚠️ No se pudieron obtener los límites del GeoJSON.");
+	      }
+	    } catch (err) {
+	      console.error("Error cargando GeoJSON:", err);
+	      alert("❌ Error al cargar el archivo GeoJSON:\n" + err.message);
+	    }
+	  };
+	  reader.readAsText(file);
+	}
+
+  // Exportar todas las capas dibujadas y trench
+  function exportGeoJSON() {
+    const all = [];
+    drawnItems.eachLayer(l => all.push(l.toGeoJSON()));
+    if (trenchLayer) trenchLayer.eachLayer(l => all.push(l.toGeoJSON()));
+    const fc = { type: "FeatureCollection", features: all };
+    const blob = new Blob([JSON.stringify(fc)], { type: "application/json" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'export.geojson';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  /* Proyectos y layers originales (sin cambios) */
+  function loadProjects() {
+    fetch("/api/qgis-projects")
+      .then(res => res.json())
+      .then(data => {
+        const list = document.getElementById("projectsList");
+        list.innerHTML = "";
+        projectMarkers.forEach(m => map.removeLayer(m));
+        projectMarkers = [];
+        data.forEach(p => {
+          const a = document.createElement("a");
+          a.className = "list-group-item list-group-item-action";
+          a.textContent = p.name;
+          a.onclick = () => centerMap(p);
+          list.appendChild(a);
+          const m = L.marker([p.lat, p.lon])
+                    .addTo(map)
+                    .bindPopup(`<b>${p.name}</b><br>${p.description}`);
+          projectMarkers.push(m);
+        });
+      })
+      .catch(err => console.error("Error cargando proyectos:", err));
+  }
+  function centerMap(p) {
+    map.setView([p.lat, p.lon], 12);
+    loadTrenchLayer(p.name);
+  }
+  window.addProject = function() {
+    const name = prompt("Nombre del proyecto:");
+    const description = prompt("Descripción:");
+    const lat = parseFloat(prompt("Latitud:"));
+    const lon = parseFloat(prompt("Longitud:"));
+    if (!name || isNaN(lat)||isNaN(lon)) return alert("Datos inválidos.");
+    fetch("/api/qgis-projects", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({name,description,lat,lon})
+    }).then(loadProjects);
+  };
+  function loadTrenchLayer(village) {
+	  fetch(`/api/qgis-projects/trench?village=${encodeURIComponent(village)}`)
+	    .then(r=>r.json())
+	    .then(d=>{
+	      const geojson = typeof d.geojson==="string"
+	        ? JSON.parse(d.geojson)
+	        : d.geojson;
+	      if (!geojson.features?.length) return console.warn("No trench data.");
+
+	      // 1) extraemos todos los type únicos
+	      const types = Array.from(new Set(
+	        geojson.features
+	          .map(f => f.properties.type)
+	          .filter(t => typeof t === "string")
+	      ));
+
+	      // 2) paleta de colores (añade más si necesitas)
+	      const palette = [
+	        "#1f77b4","#ff7f0e","#2ca02c","#d62728",
+	        "#9467bd","#e377c2","#7f7f7f","#8c564b"
+	      ];
+
+	      // 3) map type→color
+	      const typeColorMap = {};
+	      types.forEach((t,i) => {
+	        typeColorMap[t] = palette[i % palette.length];
+	      });
+
+	   // 4) Creamos un LayerGroup por cada type
+	      const layerGroups = {};
+	      types.forEach(t => {
+	        layerGroups[t] = L.layerGroup().addTo(map);
+	      });
+
+	      // 5) En lugar de un solo L.geoJSON, recorremos cada feature y la añadimos
+	      geojson.features.forEach(f => {
+	        const t = f.properties.type;
+	        const color = typeColorMap[t] || "#cccccc";
+
+	        const featureLayer = L.geoJSON(f, {
+	          style: { color, weight: 3, opacity: 0.9 }
+	        }).bindPopup(
+	          `<b>Tipo:</b> ${t}<br>`+
+	          `<b>Longitud:</b> ${f.properties.length_m.toFixed(2)} m`
+	        );
+
+	        // la añadimos al LayerGroup correspondiente
+	        layerGroups[t].addLayer(featureLayer);
+	      });
+
+	      // 6) Ahora construimos una leyenda con checkboxes
+	      const legend = L.control({ position: 'bottomright' });
+	      legend.onAdd = () => {
+	        const div = L.DomUtil.create('div', 'info legend');
+	        types.forEach(t => {
+	          const c = typeColorMap[t];
+	          const input = document.createElement('input');
+	          input.type = 'checkbox';
+	          input.checked = true;            // por defecto todos visibles
+	          input.onchange = () => {
+	            if (input.checked) map.addLayer(layerGroups[t]);
+	            else map.removeLayer(layerGroups[t]);
+	          };
+
+	          const label = document.createElement('label');
+	          label.style.display = 'block';
+	          label.innerHTML = `<span style="
+	              background:${c};
+	              width:18px;height:18px;
+	              display:inline-block;
+	              margin-right:8px;
+	              vertical-align:middle;
+	            "></span> ${t}`;
+	          label.prepend(input);
+	          div.appendChild(label);
+	        });
+	        return div;
+	      };
+	      legend.addTo(map);
+	    })
+	    .catch(e => console.error("Error cargando trench:", e));
+  }
+
+
+  // Catastro, labels y buildings (idéntico a tu script original)
+  /* ... copia aquí las funciones toggleCataster, loadCataster, toggleLabels, updateCatasterOpacity,
+     loadBuildings, toggleBuildings, updateBuildingsOpacity, saveNewReport, openVillageInMap ... */
+
+     function loadCataster() {
+    const village = new URLSearchParams(location.search).get("village") || "";
+    const url = `/api/cataster/geojson?village=${encodeURIComponent(village)}`;
+
+    fetch(url)
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((d) => {
+        catasterLayer && map.removeLayer(catasterLayer);
+        labelLayers.forEach((t) => map.removeLayer(t));
+        labelLayers.length = 0;
+
+
+        const g = typeof d.geojson === "string" ? JSON.parse(d.geojson) : d.geojson;
+
+        catasterLayer = L.geoJSON(g, {
+          style: () => ({
+            color: "#aa3300",
+            weight: 1,
+            fill: false,
+            opacity: parseFloat(catasterOpacity.value)
+          }),
+          onEachFeature: (f, l) => {
+            const street = f.properties.street || "Sin nombre";
+            const tip = L.tooltip({
+              permanent: true,
+              direction: "center",
+              className: "label-text"
+            })
+              .setContent(street)
+              .setLatLng(l.getBounds().getCenter());
+
+            labelLayers.push(tip);
+            if (labelsVisible) map.addLayer(tip);
+            l.bindPopup(`<pre>${JSON.stringify(f.properties, null, 2)}</pre>`);
+          }
+        }).addTo(map);
+        updateLabelSizes();
+
+        catasterVisible = true;
+        btnCataster.textContent = "❌ Ocultar Catastro";
+      })
+      .catch((e) => {
+        console.error("Catastro error:", e);
+        alert("❌ " + e.message);
+        btnCataster.textContent = "🖼️ Mostrar Catastro";
+        catasterVisible = false;
+      });
+  }
+
+     function toggleCataster() {
+    if (catasterVisible) {
+      map.removeLayer(catasterLayer);
+      labelLayers.forEach((t) => map.removeLayer(t));
+      catasterVisible = false;
+      btnCataster.textContent = "🖼️ Mostrar Catastro";
+    } else {
+      btnCataster.textContent = "⏳ Cargando…";
+      loadCataster();
+    }
+  }
+
+  function toggleLabels() {
+    labelsVisible = !labelsVisible;
+    labelLayers.forEach((t) =>
+      labelsVisible ? map.addLayer(t) : map.removeLayer(t)
+    );
+    btnLabels.textContent = labelsVisible ? "🔤 Ocultar Labels"
+                                          : "🔤 Mostrar Labels";
+  }
+  
+  function updateLabelSizes() {
+	  const zoom = map.getZoom();
+	  const baseSize = 12;
+
+	  const scale = zoom <= 10 ? 0.6 : zoom >= 17 ? 1.2 : 0.6 + (zoom - 10) * 0.1;
+	  const fontSize = `${Math.round(baseSize * scale)}px`;
+
+	  const showLabels = zoom >= 14;
+
+	  labelLayers.forEach(tip => {
+	    const el = tip.getElement?.();
+	    if (!el) return;
+
+	    el.style.fontSize = fontSize;
+	    el.style.display = (labelsVisible && showLabels) ? 'block' : 'none';
+	  });
+	}
+
+
+
+  /* --------------- Buildings ------------- */
+  function loadBuildings() {
+  const village = new URLSearchParams(location.search).get("village") || "";
+  const url = `/api/cataster/buildings?village=${encodeURIComponent(village)}`;
+
+  fetch(url)
+    .then((r) => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    })
+    .then((d) => {
+      if (!d.geojson?.features?.length)
+        return alert("⚠️ No hay buildings en esta zona.");
+
+      buildingsLayer && map.removeLayer(buildingsLayer);
+      labelLayers.forEach((t) => map.removeLayer(t));
+      labelLayers.length = 0;
+
+      buildingsLayer = L.geoJSON(d.geojson, {
+    	  pointToLayer: (feature, latlng) => {
+    		  const isCompleted = feature.properties.aufgabenstatus?.toLowerCase() === "completed";
+    		  return L.circleMarker(latlng, {
+    		    radius: 6,
+    		    color: isCompleted ? "#28a745" : "#007BFF",        // verde para borde
+    		    fillColor: isCompleted ? "#28a745" : "#007BFF",    // verde para relleno
+    		    fillOpacity: parseFloat(buildingsOpacity.value)
+    		  });
+    		},
+
+        onEachFeature: (f, l) => {
+          const street = f.properties.Street || f.properties.street || "";
+          const number = f.properties.housenumber || f.properties.housenumber || f.properties.HouseNumber_1 || "";
+          const label = `${street} ${number}`.trim();
+
+          const tip = L.tooltip({
+        	  permanent: true,
+        	  direction: "top",
+        	  className: "label-text",
+        	  offset: [0, -10] // 👈 sube la etiqueta sobre el punto
+        	})
+        	  .setContent(label)
+        	  .setLatLng(l.getLatLng());
+
+
+          labelLayers.push(tip);
+          if (labelsVisible) map.addLayer(tip);
+
+          l.bindPopup(`<b>${label}</b><br><pre>${JSON.stringify(f.properties, null, 2)}</pre>`);
+        }
+      }).addTo(map);
+
+      buildingsVisible = true;
+      btnBuildings.textContent = "❌ Ocultar Buildings";
+
+      updateLabelSizes(); // ← importante
+    })
+    .catch((e) => {
+      console.error("Buildings error:", e);
+      alert("❌ " + e.message);
+    });
+}
+
+
+  function toggleBuildings() {
+    if (!buildingsLayer) {
+      btnBuildings.textContent = "⏳ Cargando…";
+      loadBuildings();
+      return;
+    }
+
+    if (map.hasLayer(buildingsLayer)) {
+      map.removeLayer(buildingsLayer);
+      btnBuildings.textContent = "🏠 Mostrar Buildings";
+      buildingsVisible = false;
+    } else {
+      map.addLayer(buildingsLayer);
+      btnBuildings.textContent = "❌ Ocultar Buildings";
+      buildingsVisible = true;
+    }
+  }
+
+  /* ---------- Dibujo y reporte ---------- */
+  window.enableDrawing = function enableDrawing() {   /* expuesto a HTML */
+    if (!drawControlAdded) {
+      map.addControl(drawControl);
+      drawControlAdded = true;
+      alert("Modo dibujo activado.");
+    }
+  };
+
+  function saveNewReport(geojson) {
+    fetch("/api/village/new-report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ geometry: geojson })
+    })
+      .then((r) => {
+        if (!r.ok) throw new Error(r.statusText);
+        return r.json();
+      })
+      .then(() => alert("Reporte guardado."))
+      .catch((e) => alert("Error guardando reporte:\n" + e.message));
+  }
+
+  /* ----------- Centrar village ---------- */
+  function openVillageInMap(name) {
+    fetch(`/api/village/${encodeURIComponent(name)}/location`)
+      .then((r) => {
+        if (!r.ok) throw new Error("No encontrado");
+        return r.json();
+      })
+      .then((d) => {
+        map.setView([d.lat, d.lon], 14);
+        L.marker([d.lat, d.lon]).addTo(map).bindPopup(`<b>${name}</b>`).openPopup();
+        loadTrenchLayer(name);
+      })
+      .catch((e) => alert("Error al centrar village:\n" + e.message));
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    initMap();
+    // listeners extra si es necesario...
+    // abrir village si viene en la URL
+    const v = new URLSearchParams(location.search).get("village");
+    if (v) setTimeout(()=>openVillageInMap(v),500);
+    // listener para el cambio de zoom
+    map.on('zoomend', updateLabelSizes);
+  });
+  </script>
+</body>
+</html>

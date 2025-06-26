@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Civil Works</title>
+
+  <!-- Dependencias CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+  <style>
+    .compact-table {
+      font-size: 0.875rem;
+    }
+    .compact-table th, .compact-table td {
+      padding: 0.3rem 0.5rem;
+      white-space: nowrap;
+    }
+    .column-filter {
+      width: 100%;
+      font-size: 0.85rem;
+      padding: 2px 25px 2px 4px;
+      box-sizing: border-box;
+      position: relative;
+    }
+    /* 🔹 Contenedor de clientes y resumen alineado en la parte superior */
+	#clientsContainer {
+	    flex-grow: 1; /* Permite que los logos de clientes usen el espacio disponible */
+	    display: flex;
+	    align-items: center;
+	    gap: 15px;
+	}
+	
+	/* 🔹 Estilo de la tarjeta de Resumen */
+	.summary-card {
+	    width: 250px; /* Ajusta el ancho de la tarjeta */
+	    font-size: 14px;
+	}
+	
+	.summary-card .card-body {
+	    padding: 8px;
+	}
+	
+	.summary-card .table {
+	    font-size: 12px;
+	}
+	
+	.summary-card .table th {
+	    background-color: #343a40;
+	    color: white;
+	    font-size: 12px;
+	}
+	
+	.summary-card .table td {
+	    padding: 4px 6px;
+	}
+	    
+    .client-logo {
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      padding: 10px;
+      margin: 0 5px;
+      text-align: center;
+      min-width: 120px;
+    }
+    .client-logo:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .client-logo img {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+    }
+    .selected-client {
+      border-color: #0d6efd !important;
+      background-color: #e7f1ff !important;
+    }
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255,255,255,0.9);
+      z-index: 999;
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+    .filter-container {
+      position: relative;
+    }
+    .clear-filter {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      display: none;
+      color: #999;
+    }
+    .clear-filter:hover {
+      color: #666;
+    }
+    .card {
+	    border-radius: 10px;
+	}
+	
+	.table th, .table td {
+	    vertical-align: middle;
+	}
+	
+	.table th {
+	    background-color: #343a40 !important;
+	    color: white !important;
+	}
+	.summary-card {
+	    width: 250px; /* 🔹 Ajusta el ancho */
+	    position: relative; /* Mantiene la posición alineada */
+	    margin-top: -25px; /* 🔺 Eleva la tarjeta más arriba */
+	    font-size: 14px;
+	}
+	
+	.summary-card .card-body {
+	    padding: 10px;
+	}
+	
+	.summary-card .table {
+	    font-size: 12px;
+	}
+	
+	.summary-card .table th {
+	    background-color: #343a40;
+	    color: white;
+	    font-size: 12px;
+	}
+	
+	.summary-card .table td {
+	    padding: 4px 6px;
+	}
+		
+	    
+  </style>
+</head>
+
+<body class="container-fluid py-3 bg-light">
+
+  <!-- Contenedor de clientes y resumen de longitudes en la misma fila -->
+	<div class="d-flex justify-content-between align-items-center mb-3">
+	    
+	    <!-- Contenedor de los clientes -->
+	    <div id="clientsContainer" class="d-flex align-items-center flex-wrap">
+	        <!-- Aquí se llenarán dinámicamente los clientes -->
+	    </div>
+	
+	    <!-- Tarjeta de Resumen de Longitudes -->
+	    <div class="card shadow-sm summary-card">
+	        <div class="card-body p-2">
+	            <h6 class="card-title text-center">📊 Resumen de Longitudes</h6>
+	            <table class="table table-striped table-bordered text-center mb-0">
+	                <thead class="table-dark">
+	                    <tr>
+	                        <th>Descripción</th>
+	                        <th>Metros</th>
+	                    </tr>
+	                </thead>
+	                <tbody>
+	                    <tr>
+	                        <td><strong>Total Filtered</strong></td>
+	                        <td id="sumFilteredMeters">0.00 m</td>
+	                    </tr>
+	                    <tr>
+	                        <td><strong>Total Insyte</strong></td>
+	                        <td id="sumTotalMeters">0.00 m</td>
+	                    </tr>
+	                </tbody>
+	            </table>
+	        </div>
+	    </div>
+	
+	</div>
+	
+	<!-- Controles superiores -->
+	<div class="d-flex justify-content-between align-items-center mb-3">
+	    <div>
+	        <button id="exportCsvBtn" class="btn btn-primary me-2">
+	            <i class="bi bi-file-earmark-arrow-down me-1"></i>Export CSV
+	        </button>
+	        <button id="exportExcelBtn" class="btn btn-success">
+    			<i class="bi bi-file-earmark-excel"></i> Export Excel
+			</button>
+			<div class="export-menu">
+			    
+			</div>
+
+			
+	        
+	    </div>
+	</div>
+  
+    
+    
+  <!-- Tabla principal -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body table-responsive">
+      <table id="civilWorksTable" class="compact-table table table-sm table-hover" style="width:100%">
+        <thead>
+          <tr class="table-dark">
+            <th>Project</th>
+            <th>POP</th>
+            <th>DP</th>
+            <th>Street</th>
+            <th>TZIP</th>
+            <th>Type</th>
+            <th>Spec</th>
+            <th>Length (m)</th>
+            <th>Village</th>
+          </tr>
+          <tr class="table-secondary">
+            <th>
+              <div class="filter-container">
+                <input type="text" class="column-filter" placeholder="Project" aria-label="Filtrar Project">
+                <i class="bi bi-x-circle clear-filter"></i>
+              </div>
+            </th>
+            <th>
+              <div class="filter-container">
+                <input type="text" class="column-filter" placeholder="POP" aria-label="Filtrar POP">
+                <i class="bi bi-x-circle clear-filter"></i>
+              </div>
+            </th>
+            <th>
+              <div class="filter-container">
+                <input type="text" class="column-filter" placeholder="DP" aria-label="Filtrar DP">
+                <i class="bi bi-x-circle clear-filter"></i>
+              </div>
+            </th>
+            <th>
+              <div class="filter-container">
+                <input type="text" class="column-filter" placeholder="Street" aria-label="Filtrar Street">
+                <i class="bi bi-x-circle clear-filter"></i>
+              </div>
+            </th>
+            <th>
+              <div class="filter-container">
+                <input type="text" class="column-filter" placeholder="TZIP" aria-label="Filtrar TZIP">
+                <i class="bi bi-x-circle clear-filter"></i>
+              </div>
+            </th>
+            <th>
+              <div class="filter-container">
+                <input type="text" class="column-filter" placeholder="Type" aria-label="Filtrar Type">
+                <i class="bi bi-x-circle clear-filter"></i>
+              </div>
+            </th>
+            <th>
+              <div class="filter-container">
+                <input type="text" class="column-filter" placeholder="Spec" aria-label="Filtrar Spec">
+                <i class="bi bi-x-circle clear-filter"></i>
+              </div>
+            </th>
+            <th>
+              <div class="filter-container">
+                <input type="text" class="column-filter" placeholder="Length" aria-label="Filtrar Length">
+                <i class="bi bi-x-circle clear-filter"></i>
+              </div>
+            </th>
+            <th>
+              <div class="filter-container">
+                <input type="text" class="column-filter" placeholder="Village" aria-label="Filtrar Village">
+                <i class="bi bi-x-circle clear-filter"></i>
+              </div>
+            </th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+  </div>
+
+  <!-- Gráfico: Contenedor fijo de 300px -->
+  <div class="d-flex align-items-center mb-3">
+    <label for="chartDimensionSelect" class="me-2">Agrupar por:</label>
+    <select id="chartDimensionSelect" class="form-select w-auto">
+        <option value="type">Tipo de Obra Civil</option>
+        <option value="spec">Especificación</option>
+    </select>
+</div>
+  
+  <div class="row mb-3">
+    <div class="col">
+      <h5>Distribución de Longitudes</h5>
+      <div style="height: 300px; border: 1px solid #ccc; padding: 10px;">
+        <canvas id="myChart" style="max-height: 100%;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenedor de notificaciones -->
+  <div id="toastContainer" class="toast-container position-fixed bottom-0 end-0 p-3"></div>
+
+  <!-- Dependencias JS -->
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+  
+
+  <script th:inline="none">
+  //<![CDATA[
+  $(document).ready(function() {
+      let selectedClient = "";
+      const clientsContainer = $('#clientsContainer');
+      let table;
+      let myChartInstance = null; // Instancia del gráfico
+
+      // Overlay de carga para la tabla
+      const loadingOverlay = $('<div class="loading-overlay"><div class="spinner-border text-primary"></div></div>');
+      $('#civilWorksTable').after(loadingOverlay);
+
+      // Leer param "project_id" de la URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const projectId = urlParams.get('project_id') || null;
+
+      // Inicializar DataTable y cargar clientes
+      initDataTable(projectId);
+      loadClients();
+   	  // Si se modifica algún filtro en la cabecera, actualizar la gráfica tras 500ms de debounce
+      $('#civilWorksTable thead tr:eq(1) input').on('keyup change', function() {
+          clearTimeout(window.chartUpdateTimeout);
+          window.chartUpdateTimeout = setTimeout(fetchStats, 500);
+      });
+   	  
+      $("#chartDimensionSelect").on("change", function () {
+          fetchStats(); // 🔹 Llama a la función para actualizar la gráfica
+      });
+
+      // Llamar a fetchStats() automáticamente al cargar la página
+      fetchStats();
+
+      // Botón "load Stats" (opcional) para recargar la gráfica manualmente
+      $('#loadStatsBtn').on('click', function() {
+          fetchStats();
+      });
+
+      // ─────────────────────────────────────────────────────────────
+      // Función para obtener filtros de la cabecera para la gráfica
+      function getStatsFilters() {
+	      let filters = {};
+	      const headerInputs = $('#civilWorksTable thead tr:eq(1) input');
+	      filters.project = $(headerInputs[0]).val();
+	      filters.pop = $(headerInputs[1]).val();
+	      filters.dp = $(headerInputs[2]).val();
+	      filters.street = $(headerInputs[3]).val();
+	      filters.type = $(headerInputs[5]).val();
+	      filters.spec = $(headerInputs[6]).val();
+	      return filters;
+	  }
+      // ─────────────────────────────────────────────────────────────
+      // Función para cargar la gráfica
+      function fetchStats() {
+	    // Obtener la dimensión seleccionada (Type o Spec)
+	    const selectedDimension = $("#chartDimensionSelect").val();
+	
+	    // Extraer filtros aplicados en la tabla
+	    const statsFilters = getStatsFilters();
+	    
+	
+	    // Crear el payload con los filtros
+	    const payload = {
+	        dimension: selectedDimension, // Se actualiza con el valor seleccionado
+	        client: selectedClient,
+	        filters: statsFilters
+	    };
+	
+	    $.ajax({
+	        url: '/api/civil-works/stats',
+	        method: 'POST',
+	        contentType: 'application/json',
+	        data: JSON.stringify(payload),
+	        success: function(data) {
+	            if (!data || $.isEmptyObject(data)) {
+	                console.warn("⚠️ No hay datos para la gráfica.");
+	                $('#myChart').hide();
+	                return;
+	            }
+	            $('#myChart').show();
+	
+	            // Preparar datos para Chart.js
+	            const labels = Object.keys(data);
+	            const values = Object.values(data);
+	            
+	            // Calcular el total de metros para los porcentajes
+	            const totalMeters = values.reduce((sum, value) => sum + value, 0);
+	
+	            // Destruir gráfica anterior si existe
+	            if (window.myChartInstance) {
+	                window.myChartInstance.destroy();
+	            }
+	
+	            const ctx = document.getElementById('myChart').getContext('2d');
+	            window.myChartInstance = new Chart(ctx, {
+	                type: 'bar',
+	                data: {
+	                    labels: labels,
+	                    datasets: [{
+	                        label: 'Metros Totales',
+	                        data: values,
+	                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+	                        borderColor: 'rgba(54, 162, 235, 1)',
+	                        borderWidth: 1
+	                    }]
+	                },
+	                options: {
+	                    responsive: true,
+	                    maintainAspectRatio: false,
+	                    plugins: {
+	                        legend: { display: false }, // Oculta la leyenda
+	                        datalabels: {
+	                            anchor: 'end',
+	                            align: 'top',
+	                            color: '#000',
+	                            font: { weight: 'bold', size: 12 },
+	                            formatter: (value) => {
+	                                let percentage = ((value / totalMeters) * 100).toFixed(1);
+	                                return `${value.toFixed(0)} m\n(${percentage}%)`; // 🔹 Metros + porcentaje
+	                            }
+	                        }
+	                    },
+	                    scales: {
+	                        y: {
+	                            beginAtZero: true,
+	                            title: { display: true, text: 'Metros de Civil Works' }
+	                        },
+	                        x: {
+	                            title: { display: true, text: selectedDimension === 'type' ? 'Tipo de Obra Civil' : 'Especificación' }
+	                        }
+	                    }
+	                },
+	                plugins: [ChartDataLabels] // 🔹 Activa los datos en las barras
+	            });
+	        },
+	        error: function(xhr) {
+	            console.error("❌ Error al obtener las estadísticas:", xhr);
+	        }
+	    });
+	}
+
+      
+   	  // Función para obtener los filtros de la tabla
+      function getStatsFilters() {
+          let filters = {};
+          const headerInputs = $('#civilWorksTable thead tr:eq(1) input');
+
+          filters.project = $(headerInputs[0]).val() || null;
+          filters.pop = $(headerInputs[1]).val() || null;
+          filters.dp = $(headerInputs[2]).val() || null;
+          filters.street = $(headerInputs[3]).val() || null;
+          filters.tzip = $(headerInputs[4]).val() || null;
+          filters.type = $(headerInputs[5]).val() || null;
+          filters.spec = $(headerInputs[6]).val() || null;
+          filters.village = $(headerInputs[8]).val() || null;
+          filters.client = selectedClient ||"";
+
+          return filters;
+      }
+
+
+      // ─────────────────────────────────────────────────────────────
+      // Función para cargar clientes
+      function loadClients() {
+	    $.ajax({
+	        url: '/api/clients',
+	        method: 'GET',
+	        beforeSend: () => clientsContainer.html('<div class="spinner-border text-primary"></div>'),
+	        success: function(clients) {
+	            console.log("📌 Clientes recibidos:", clients); // 🔍 Ver en consola si llegan los datos
+	
+	            clientsContainer.empty();
+	
+	            // Botón "Todos"
+	            const allButton = $(`
+	                <div class="col-auto client-logo">
+	                    <img src="/images/all.png" alt="Todos" onerror="this.remove()">
+	                    <div>Todos</div>
+	                </div>
+	            `).on('click', function() {
+	                $('.client-logo').removeClass('selected-client');
+	                $(this).addClass('selected-client');
+	                selectedClient = "";
+	                table.ajax.reload();
+	            }).addClass('selected-client');
+	
+	            clientsContainer.append(allButton);
+	
+	            // Agregar clientes con sus logos
+	            clients.forEach(client => {
+	                let logoPath = `/images/${client.name.toLowerCase()}.png`; // 🔹 Forzamos la ruta a /images/
+	
+	                console.log(`🖼️ Cargando logo para ${client.name}: ${logoPath}`); // 🔍 Ver en consola
+	
+	                const clientCard = $(`
+	                    <div class="col-auto client-logo">
+	                        <img src="${logoPath}" 
+	                             alt="${client.name}" 
+	                             onerror="this.src='/images/default-logo.png'">
+	                        <div>${client.name}</div>
+	                    </div>
+	                `).on('click', function() {
+	                    $('.client-logo').removeClass('selected-client');
+	                    $(this).addClass('selected-client');
+	                    selectedClient = client.name;
+	                    table.ajax.reload();
+	                    fetchStats(); // 🔹 Llama a la función para actualizar la gráfica
+	                });
+	
+	                clientsContainer.append(clientCard);
+	            });
+	        },
+	        error: (xhr) => showToast(`❌ Error cargando clientes: ${xhr.statusText}`, 'danger')
+	    });
+	}
+
+      // ─────────────────────────────────────────────────────────────
+      // Inicialización de la DataTable
+      function initDataTable(projectId) {
+          if ($.fn.DataTable.isDataTable('#civilWorksTable')) {
+              $('#civilWorksTable').DataTable().destroy();
+          }
+          table = $('#civilWorksTable').DataTable({
+              processing: true,
+              serverSide: true,
+              paging: true,
+              searching: true,
+              ordering: true,
+              pageLength: 10,
+              lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+              ajax: {
+                  url: '/api/civil-works/data',
+                  type: 'POST',
+                  contentType: 'application/json',
+                  data: function(d) {
+                      return JSON.stringify({
+                          ...d,
+                          client: selectedClient,
+                          project_id: projectId,
+                          pop: $('#filter-pop').val(),
+                          dp: $('#filter-dp').val(),
+                          street: $('#filter-street').val()
+                      });
+                  },
+                  dataSrc: 'data',
+                  beforeSend: () => loadingOverlay.show(),
+                  complete: () => loadingOverlay.hide(),
+                  error: (xhr) => showToast(`Error cargando datos: ${xhr.statusText}`, 'danger')
+              },
+              columns: [
+                  { data: 'project' },
+                  { data: 'pop' },
+                  { data: 'dp' },
+                  { data: 'street' },
+                  { data: 'tzip' },
+                  { data: 'type' },
+                  { data: 'spec' },
+                  { 
+                      data: 'length_meters',
+                      render: $.fn.dataTable.render.number(',', '.', 1, '')
+                  },
+                  { data: 'village' }
+              ],
+              drawCallback: function(settings) {
+            	    const total = settings.json.recordsTotal;
+            	    const filtered = settings.json.recordsFiltered;
+            	    const sumLengthFiltered = settings.json.sumLengthFiltered || 0;
+            	    const sumLengthPage = settings.json.sumLengthPage || 0;
+            	    const sumLengthTotal = settings.json.sumLengthTotal || 0;
+
+            	    // Actualizar la tabla de sumas
+            	    $('#sumPageMeters').text(sumLengthPage.toFixed(2) + " m");
+            	    $('#sumFilteredMeters').text(sumLengthFiltered.toFixed(2) + " m");
+            	    $('#sumTotalMeters').text(sumLengthTotal.toFixed(2) + " m");
+            	}
+            });
+
+          // ─────────────────────────────────────────────────────────────
+          // Manejar filtros en cada columna
+          table.columns().every(function(i) {
+              const column = this;
+              const input = $(`#civilWorksTable thead tr:eq(1) th:eq(${i}) input`);
+              const clearBtn = $(`#civilWorksTable thead tr:eq(1) th:eq(${i}) .clear-filter`);
+              
+              // Autocomplete
+              input.autocomplete({
+                  delay: 300,
+                  minLength: 2,
+                  source: function(request, response) {
+                      $.ajax({
+                          url: '/api/civil-works/suggestions',
+                          data: {
+                              column: column.dataSrc(),
+                              term: request.term
+                          },
+                          success: response,
+                          error: () => response([])
+                      });
+                  },
+                  select: function(event, ui) {
+                      input.val(ui.item.value);
+                      column.search(ui.item.value).draw();
+                      return false;
+                  }
+              });
+
+              // Búsqueda con debounce
+              let searchTimeout;
+              input.on('keyup change', function() {
+                  clearTimeout(searchTimeout);
+                  searchTimeout = setTimeout(() => {
+                      if (column.search() !== this.value) {
+                          column.search(this.value).draw();
+                      }
+                  }, 500);
+              });
+
+              // Botón limpiar filtro
+              input.on('input', function() {
+                  clearBtn.toggle(!!this.value);
+              });
+              
+              clearBtn.on('click', function() {
+                  input.val('').trigger('change');
+                  $(this).hide();
+              });
+          });
+      }
+
+      // ─────────────────────────────────────────────────────────────
+      // Exportar CSV
+      $('#exportCsvBtn').on('click', function() {
+          const btn = $(this);
+          const originalHtml = btn.html();
+          btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Exportando...');
+
+          const filters = {};
+          $('.column-filter').each(function(i) {
+              const colName = table.column(i).dataSrc();
+              filters[colName] = $(this).val();
+          });
+          filters.client = selectedClient;
+
+          $.ajax({
+              url: '/api/civil-works/export',
+              type: 'GET',
+              data: filters,
+              xhrFields: { responseType: 'blob' },
+              success: function(response, status, xhr) {
+                  const blob = new Blob([response], { type: 'text/csv;charset=utf-8;' });
+                  const downloadUrl = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = downloadUrl;
+
+                  const contentDisposition = xhr.getResponseHeader('Content-Disposition');
+                  let fileName = 'export.csv';
+                  if (contentDisposition && contentDisposition.indexOf('attachment') !== -1) {
+                      const matches = /filename="([^"]*)"/.exec(contentDisposition);
+                      if (matches != null && matches[1]) fileName = matches[1];
+                  }
+
+                  a.download = fileName;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(downloadUrl);
+
+                  showToast('El archivo CSV se ha descargado correctamente.', 'success');
+              },
+              error: function(xhr) {
+                  showToast('Error al exportar el CSV.', 'danger');
+              },
+              complete: function() {
+                  btn.prop('disabled', false).html(originalHtml);
+              }
+          });
+      });
+      
+      //Exportar BOM
+      $('#exportExcelBtn').on('click', function() {
+		    let filters = {};
+		    $('.column-filter').each(function(i) {
+		        let colName = $('#civilWorksTable').DataTable().column(i).dataSrc();
+		        filters[colName] = $(this).val();
+		    });
+		    filters.client = selectedClient; // Añadir cliente si está seleccionado
+		
+		    let queryString = $.param(filters);
+		    window.location.href = `/api/civil-works/export/excel?${queryString}`;
+		});
+      
+      $(document).ready(function () {
+    	    $('#exportPdfBtn').on('click', function (e) {
+    	        e.preventDefault();
+    	        fetch('/api/civil-works/export/pdf')
+    	            .then(response => response.blob())
+    	            .then(blob => {
+    	                let url = window.URL.createObjectURL(blob);
+    	                let a = document.createElement('a');
+    	                a.href = url;
+    	                a.download = 'Civil_Work_Report.pdf';
+    	                document.body.appendChild(a);
+    	                a.click();
+    	                a.remove();
+    	            })
+    	            .catch(error => console.error('Error exportando PDF:', error));
+    	    });
+    	});
+
+
+      // ─────────────────────────────────────────────────────────────
+      // Notificaciones estilo toast
+      function showToast(message, type = 'info') {
+          const toast = $(`
+              <div class="toast align-items-center text-bg-${type} border-0 fade" role="alert">
+                  <div class="d-flex">
+                      <div class="toast-body">${message}</div>
+                      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                  </div>
+              </div>
+          `);
+          $('#toastContainer').append(toast);
+          toast.toast({ delay: 3000 }).toast('show');
+      }
+  });
+  //]]>
+  </script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title layout:fragment="title">arweb sincronization checker</title>
+
+    <style layout:fragment="styles">
+        body { padding: 2rem; }
+        .difference { background-color: #ffe0e0; }
+        .card-header { cursor: pointer; }
+        .card + .card { margin-top: 1rem; }
+        .section-title { border-bottom: 2px solid #ccc; margin-bottom: 1rem; padding-bottom: .5rem; }
+    </style>
+</head>
+<body>
+<div layout:fragment="content">
+
+    <!-- Selector de POP -->
+    <form method="get" action="#" class="row g-3 mb-4">
+        <div class="col-md-4">
+            <label for="pop" class="form-label">Select POP:</label>
+            <select name="pop" id="pop" class="form-select">
+                <option value="">-- Choose POP --</option>
+                <option th:each="stat : ${popStats}"
+                        th:value="${stat.pop}"
+                        th:text="${stat.pop}"
+                        th:selected="${stat.pop == selectedPop}"></option>
+            </select>
+        </div>
+        <div class="col-md-2 align-self-end">
+            <button type="submit" class="btn btn-success w-100">Load</button>
+        </div>
+    </form>
+
+    <!-- Resumen de diferencias -->
+    <div th:if="${selectedPopStats != null}">
+        <div class="section-title h5">Discrepancy Summary for <span th:text="${selectedPop}">POP</span></div>
+        <div class="row g-3 mb-4">
+            <div class="col" th:each="entry : ${selectedPopStats.entrySet()}">
+                <div class="card border-secondary">
+                    <div class="card-body text-center">
+                        <div class="fw-bold text-uppercase" th:text="${entry.key.replace('_differences', '').replace('_', ' ')}">Field</div>
+                        <div class="fs-5 text-danger" th:text="${entry.value}">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DPs afectados -->
+    <div th:if="${not #lists.isEmpty(dpList)}" class="mb-4">
+        <div class="section-title h5">Affected DPs in <span th:text="${selectedPop}">POP</span></div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item" th:each="dp : ${dpList}" th:text="${dp}">DP</li>
+        </ul>
+    </div>
+
+    <!-- Gráfico de unidades por DP -->
+    <div th:if="${dpUnitMap != null and !dpUnitMap.isEmpty()}" class="mb-5">
+        <div class="section-title h5">Units per DP</div>
+        <canvas id="dpChart" height="100"></canvas>
+        <script th:inline="javascript">
+            /*<![CDATA[*/
+            const chartJsScript = document.createElement("script");
+            chartJsScript.src = "https://cdn.jsdelivr.net/npm/chart.js";
+            chartJsScript.onload = () => {
+                const labels = [[${dpUnitMap.keySet()}]];
+                const data = [[${dpUnitMap.values()}]];
+                const ctx = document.getElementById('dpChart').getContext('2d');
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Units',
+                            data: data,
+                            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { precision: 0 }
+                            }
+                        }
+                    }
+                });
+            };
+            document.head.appendChild(chartJsScript);
+            /*]]>*/
+        </script>
+    </div>
+
+    <!-- Comparaciones -->
+    <div th:if="${#lists.isEmpty(comparisons)}" class="alert alert-info">No differences found for this POP.</div>
+
+    <div th:each="row : ${comparisons}" class="card shadow-sm mb-3">
+        <div class="card-header bg-light" data-bs-toggle="collapse" th:attr="data-bs-target='#home__' + ${row.home_id}">
+            <strong th:text="'Home ID: ' + ${row.home_id}">Home ID</strong>
+        </div>
+        <div class="collapse" th:id="'home__' + ${row.home_id}">
+            <div class="card-body">
+                <table class="table table-sm table-bordered">
+                    <thead class="table-light">
+                    <tr><th>Field</th><th>AR Value</th><th>Planr Value</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${row.dp_ar != row.dp_planr}">
+                        <td>DP</td>
+                        <td class="difference" th:text="${row.dp_ar}">AR</td>
+                        <td class="difference" th:text="${row.dp_planr}">Planr</td>
+                    </tr>
+                    <tr th:if="${row.reason_nc != row.grundna}">
+                        <td>Reason</td>
+                        <td class="difference" th:text="${row.reason_nc}">AR</td>
+                        <td class="difference" th:text="${row.grundna}">Planr</td>
+                    </tr>
+                    <tr th:if="${row.delivery_status != row.anschlussstatus}">
+                        <td>Status</td>
+                        <td class="difference" th:text="${row.delivery_status}">AR</td>
+                        <td class="difference" th:text="${row.anschlussstatus}">Planr</td>
+                    </tr>
+                    <tr th:if="${row.cable_id != row.kabel_id_from_engineering}">
+                        <td>Cable</td>
+                        <td class="difference" th:text="${row.cable_id}">AR</td>
+                        <td class="difference" th:text="${row.kabel_id_from_engineering}">Planr</td>
+                    </tr>
+                    <tr th:if="${row.odfcatv != row.odf_catv_from_engineering}">
+                        <td>ODF CATV</td>
+                        <td class="difference" th:text="${row.odfcatv}">AR</td>
+                        <td class="difference" th:text="${row.odf_catv_from_engineering}">Planr</td>
+                    </tr>
+                    <tr th:if="${row.odfcatv_position != row.odf_catv_position_from_engineering}">
+                        <td>ODF CATV Pos</td>
+                        <td class="difference" th:text="${row.odfcatv_position}">AR</td>
+                        <td class="difference" th:text="${row.odf_catv_position_from_engineering}">Planr</td>
+                    </tr>
+                    <tr th:if="${row.odf != row.odf_ip_from_engineering}">
+                        <td>ODF IP</td>
+                        <td class="difference" th:text="${row.odf}">AR</td>
+                        <td class="difference" th:text="${row.odf_ip_from_engineering}">Planr</td>
+                    </tr>
+                    <tr th:if="${row.odf_position != row.odf_ip_position_from_engineering}">
+                        <td>ODF IP Pos</td>
+                        <td class="difference" th:text="${row.odf_position}">AR</td>
+                        <td class="difference" th:text="${row.odf_ip_position_from_engineering}">Planr</td>
+                    </tr>
+                    <tr th:if="${row.delivery_date_passive != row.fertigstellungsdatum_teilstueck}">
+                        <td>Delivery Date Passive</td>
+                        <td class="difference" th:text="${row.delivery_date_passive}">AR</td>
+                        <td class="difference" th:text="${row.fertigstellungsdatum_teilstueck}">Planr</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="chatModal">
+    <!-- CSS específico del modal -->
+    <!-- Modal Chat DeepSeek Mejorado -->
+    <div class="modal fade" id="deepSeekChatModal" tabindex="-1" aria-labelledby="deepSeekChatLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <!-- Encabezado del Modal -->
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="deepSeekChatLabel">Chatbot Insyte</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <!-- Cuerpo del Modal -->
+                <div class="modal-body">
+                    <p class="lead text-center">Bienvenido al Chatbot de Insyte</p>
+
+                    <div id="chatHistory" class="mb-3 p-3 border rounded bg-light" style="height: 600px; overflow-y: auto;">
+                        <!-- Mensajes del chat se agregarán aquí dinámicamente -->
+                    </div>
+
+                    <textarea id="chatPrompt" class="form-control mb-2" rows="2" placeholder="Escribe tu pregunta..."></textarea>
+
+                    <div class="mb-3">
+                        <input type="file" id="fileUpload" class="form-control" multiple>
+                    </div>
+                </div>
+
+                <!-- Pie del Modal -->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-success" id="sendChatPrompt">Enviar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Fin Modal Chat DeepSeek Mejorado -->
+    <!-- JS específico del modal -->
+</div>
+</body>
+</html>

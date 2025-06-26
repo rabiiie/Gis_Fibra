@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>AppFibra - Dashboard Contratos</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    />
+    <!-- Bootstrap Icons (para usar iconos en sidebar y barra) -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+    />
+    <!-- Google Fonts: Roboto (opcional) -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* ========== GLOBAL STYLES ========== */
+      body {
+        font-family: 'Roboto', sans-serif;
+        background-color: #f8f9fa;
+      }
+      a {
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: none;
+      }
+      
+      /* ========== REACT-STYLE NAVBAR ========== */
+      .navbar-react {
+        background-color: #20232a;
+        padding: 0.5rem 1rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .navbar-brand-react {
+        color: #61dafb !important;
+        font-weight: 700;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+      }
+
+      .nav-link-react {
+        color: #ffffff !important;
+        font-weight: 500;
+        padding: 0.5rem 1rem !important;
+        transition: all 0.3s ease;
+      }
+
+      .nav-link-react:hover,
+      .nav-link-react.active {
+        color: #61dafb !important;
+        background-color: rgba(97, 218, 251, 0.1);
+        border-radius: 4px;
+      }
+
+      .navbar-toggler-react {
+        border-color: rgba(97, 218, 251, 0.1);
+      }
+
+      .navbar-toggler-react-icon {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2897, 218, 251, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+      }
+
+      /* ========== SIDEBAR STYLES ========== */
+      #sidebar-wrapper {
+        min-height: 100vh;
+        border-right: 1px solid #dee2e6;
+        background-color: #ffffff;
+      }
+      .sidebar-heading {
+        font-size: 1.2rem;
+        font-weight: 600;
+        padding: 1rem;
+      }
+      .list-group-item.active {
+        background-color: #0d6efd;
+        color: #fff;
+        border-color: #0d6efd;
+      }
+
+      /* ========== PAGE CONTENT WRAPPER ========== */
+      #page-content-wrapper {
+        width: 100%;
+        min-height: 100vh;
+      }
+
+      /* ========== TOP NAVBAR ========== */
+      .navbar-brand {
+        font-weight: bold;
+        letter-spacing: 1px;
+      }
+
+      /* ========== DASHBOARD SECTION ========== */
+      .card-header {
+        font-weight: 500;
+      }
+      #dashboardStatsTable thead th {
+	  background-color: #f8f9fa;
+	  font-weight: 600;
+	  vertical-align: middle;
+	}
+	
+	#dashboardStatsTable tbody tr:hover {
+	  background-color: #f1f3f5;
+	}
+	
+	#dashboardStatsTable td.text-end {
+	  font-variant-numeric: tabular-nums;
+	  font-size: 0.95rem;
+	}
+	
+	#dashboardStatsTable td strong {
+	  font-weight: 700;
+	  color: #212529;
+	}
+	
+	#dashboardStatsTable td:first-child {
+	  font-weight: 500;
+	  white-space: nowrap;
+	}
+	
+	#dashboardStatsTable {
+	  border-radius: 8px;
+	  overflow: hidden;
+	}
+	      
+
+      /* ========== TABLE OF CONTRACTS ========== */
+      #contractsTable {
+	  border-collapse: separate;
+	  border-spacing: 0;
+	  background-color: white;
+	  box-shadow: 0 0 0 1px #dee2e6;
+	  border-radius: 8px;
+	  overflow: hidden;
+	}
+	
+	#contractsTable thead th {
+	  position: sticky;
+	  top: 0;
+	  background: #343a40;
+	  color: #ffffff;
+	  z-index: 10;
+	  font-size: 0.875rem;
+	  padding: 0.75rem;
+	  text-align: left;
+	}
+	
+	#contractsTable tbody tr:nth-child(even) {
+	  background-color: #f8f9fa;
+	}
+	
+	#contractsTable tbody tr:hover {
+	  background-color: #e0f0ff;
+	  transition: background-color 0.2s ease;
+	  cursor: pointer;
+	}
+	
+	#contractsTable td {
+	  font-size: 0.875rem;
+	  padding: 0.6rem 0.75rem;
+	  vertical-align: middle;
+	  border-top: 1px solid #dee2e6;
+	}
+	
+	#contractsTable .status-pill {
+	  display: inline-block;
+	  padding: 0.25em 0.6em;
+	  font-size: 0.75rem;
+	  font-weight: 500;
+	  border-radius: 12px;
+	  color: white;
+	}
+	
+	.status-pill.status-ok {
+	  background-color: #198754;
+	}
+	.status-pill.status-warning {
+	  background-color: #ffc107;
+	  color: #212529;
+	}
+	.status-pill.status-error {
+	  background-color: #dc3545;
+	}
+	
+	.action-buttons {
+	  display: flex;
+	  gap: 0.25rem;
+	}
+	
+	.action-buttons .btn {
+	  font-size: 0.75rem;
+	  padding: 0.25rem 0.5rem;
+	}
+
+      /* ========== BARS IN STATS TABLE (OPCIONAL) ========== */
+      .bar-container {
+        background-color: #e9ecef;
+        border-radius: 5px;
+        height: 10px;
+        width: 100%;
+        margin-top: 2px;
+      }
+      .bar {
+        height: 100%;
+        border-radius: 5px;
+        background-color: #0d6efd;
+        transition: width 0.4s ease-in-out;
+      }
+
+      /* ========== MEDIA QUERIES ========== */
+      @media (max-width: 992px) {
+        /* Ajustes para pantallas medianas o pequeñas */
+        #sidebar-wrapper {
+          min-height: auto;
+        }
+        sidebarMenu .list-group-item.active {
+		  background-color: #0d6efd; /* azul bootstrap */
+		  color: white;
+		  border: none;
+		}
+		#sidebarMenu .list-group-item.active i {
+		  color: white;
+		}
+      }
+    </style>
+  </head>
+
+  <body>
+  
+  <!-- ========== REACT-STYLE NAVBAR ========== -->
+    <!-- ✅ Barra superior fija: logo + usuario -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+  <div class="container-fluid">
+    <!-- Logo -->
+    <a class="navbar-brand fw-bold text-info" href="/">
+      <i class="bi bi-fiber_manual-record me-2"></i> AppFibra
+    </a>
+
+    <!-- Usuario -->
+    <ul class="navbar-nav ms-auto">
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle text-light" href="#" role="button" data-bs-toggle="dropdown">
+          <i class="bi bi-person-circle me-1"></i> Rabie Samadi
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="#">Perfil</a></li>
+          <li><a class="dropdown-item" href="#">Configuración</a></li>
+          <li><hr class="dropdown-divider" /></li>
+          <li><a class="dropdown-item text-danger" href="#">Cerrar sesión</a></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ✅ Barra de navegación horizontal -->
+<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom mt-5">
+  <div class="container-fluid">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topMenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="topMenu">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link active" href="/home">
+            <i class="bi bi-house-door me-1"></i> Inicio
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/dashboard">
+            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/contracts">
+            <i class="bi bi-file-earmark-text me-1"></i> Contratos
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/analytics">
+            <i class="bi bi-bar-chart-line me-1"></i> Analíticas
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/settings">
+            <i class="bi bi-gear me-1"></i> Configuración
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+    
+	
+	<script>
+	// ==== SCRIPT PARA ACTIVAR EL BOTÓN PULSADO EN EL SIDEBAR ====
+	document.querySelectorAll('#sidebarMenu a').forEach(link => {
+	  link.addEventListener('click', function(e) {
+	    // Quitamos 'active' a todos
+	    document.querySelectorAll('#sidebarMenu a').forEach(l => l.classList.remove('active'));
+	    // Añadimos 'active' al pulsado
+	    this.classList.add('active');
+	  });
+	});
+	</script>
+	
+	
+
+      <!-- ========== PAGE CONTENT ========== -->
+      <div id="page-content-wrapper">
+      
+        
+
+        <!-- MAIN CONTENT -->
+<div class="container-fluid py-3">
+  <div class="row g-4">
+    <!-- ↙️ Estadísticas + Búsqueda/Resumen   (dos cards apiladas en pantallas md, lado a lado en xl) -->
+    <div class="col-12 col-xl-6 d-flex flex-column gap-4">
+
+      <!-- 📊 Estadísticas del Dashboard -->
+      <div class="card shadow-sm flex-grow-1">
+        <div class="card-header bg-transparent border-bottom-0 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Estadísticas</h6>
+          <input id="statsSearchInput"
+                 type="text"
+                 class="form-control form-control-sm w-auto"
+                 placeholder="Filtrar…" />
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table id="dashboardStatsTable" class="table table-striped table-hover table-bordered table-sm align-middle">
+			  <thead class="table-light text-center sticky-top" style="z-index: 5;"></thead>
+			  <tbody></tbody>
+			</table>
+			            
+          </div>
+        </div>
+      </div>
+
+      <!-- 🔍 Buscar + 🏠 Resumen -->
+      <div class="card shadow-sm" id="activationCard">
+        <div class="card-header bg-transparent border-bottom-0">
+          <h6 class="mb-0"><i class="bi bi-search me-2"></i>Búsqueda &amp; Detalles de Dirección</h6>
+        </div>
+
+        <div class="card-body">
+          <!-- Inputs en línea -->
+          <div class="row g-2 align-items-end mb-3">
+            <div class="col-12 col-md">
+              <label class="form-label mb-1 small fw-semibold" for="globalHomeIdSearch">Home ID</label>
+              <input id="globalHomeIdSearch"
+                     type="text"
+                     class="form-control form-control-sm"
+                     placeholder="Home ID…" />
+            </div>
+            <div class="col-12 col-md">
+              <label class="form-label mb-1 small fw-semibold" for="globalBuildingIdSearch">Building ID</label>
+              <div class="input-group input-group-sm">
+                <input id="globalBuildingIdSearch"
+                       type="text"
+                       class="form-control"
+                       placeholder="Building ID…" />
+                <button class="btn btn-primary" type="button" onclick="runGlobalSearch()">
+                  <i class="bi bi-search"></i>
+                </button>
+                <button class="btn btn-outline-secondary" type="button" onclick="clearGlobalSearch()">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detalles -->
+          <table class="table table-sm table-bordered mb-0">
+            <tbody id="filteredDetails">
+              <tr><th>Order Date</th>        <td id="detailOrderDate">-</td></tr>
+				<tr><th>Task Status</th>            <td id="detailStatus">-</td></tr>
+				<tr><th>HAS</th>               <td id="detailActivated">-</td></tr>
+				<tr><th>Anschlussstatus</th>   <td id="detailActivationStatus">-</td></tr>
+				<tr><th>Activation Date</th>   <td id="detailActivationDate">-</td></tr>
+      
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ➡️ Analítica de Contratos  (ocupa el ancho completo debajo en md, 6/12 en xl) -->
+    <div class="col-12 col-xl-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-transparent border-bottom-0">
+          <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Analítica de Contratos</h6>
+        </div>
+
+        <div class="card-body d-flex flex-column">
+          <!-- Selects -->
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label for="aggregationField1" class="form-label small fw-semibold">Grupo 1</label>
+              <select id="aggregationField1" class="form-select form-select-sm">
+                <option value="access_location">Access Location</option>
+                <option value="subtype">Subtype</option>
+                <option value="aufgabenstatus">Aufgabenstatus</option>
+                <option value="building_status">Building Status</option>
+                <option value="pha">PHA</option>
+                <option value="has">HAS</option>
+                <option value="building_id">Building ID</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="aggregationField2" class="form-label small fw-semibold">Grupo 2</label>
+              <select id="aggregationField2" class="form-select form-select-sm">
+                <option value="access_location">Access Location</option>
+                <option value="subtype">Subtype</option>
+                <option value="aufgabenstatus">Aufgabenstatus</option>
+                <option value="building_status">Building Status</option>
+                <option value="pha">PHA</option>
+                <option value="has">HAS</option>
+                <option value="building_id">Building ID</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Gráfico -->
+          <div class="flex-grow-1">
+            <canvas id="aggregationChart" style="max-height: 420px;"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+        
+        
+
+          <!-- Sección de Tabla de Contratos -->
+          <div class="card shadow-sm mb-4">
+            <div
+              class="card-header d-flex justify-content-between align-items-center"
+            >
+              <div class="d-flex align-items-center">
+                <span class="me-3">Lista de Contratos / Vistas</span>
+                <!-- Selector de vistas -->
+                <!-- Nav de vistas -->
+			<ul class="nav nav-pills nav-fill me-2" id="viewSelectorNav">
+			  <li class="nav-item">
+			    <a class="nav-link active" data-view="contracts_list" href="#">Contracts List</a>
+			  </li>
+			  <li class="nav-item">
+			    <a class="nav-link" data-view="planner" href="#">Planner</a>
+			  </li>
+			  <li class="nav-item">
+			    <a class="nav-link" data-view="task_units" href="#">Unit Task</a>
+			  </li>
+			  <li class="nav-item">
+			    <a class="nav-link" data-view="buildings_task" href="#">Buildings Task</a>
+			  </li>
+			  <li class="nav-item">
+			    <a class="nav-link" data-view="buildings_status_extended" href="#">Buildings Status Extended</a>
+			  </li>
+			  <li class="nav-item">
+			    <a class="nav-link" data-view="baulist_highlights" href="#">Baulist Highlights</a>
+			  </li>
+			  <li class="nav-item">
+			    <a class="nav-link" data-view="activations_highlights" href="#">Activations Highlights</a>
+			  </li>
+			  <li class="nav-item">
+                <a class="nav-link" data-view="ar_web" href="#">AR Web</a>
+			</ul>
+			                
+              </div>
+              <div class="d-flex align-items-center">
+                <button
+                  class="btn btn-sm btn-outline-primary me-2"
+                  id="btnExportExcel"
+                >
+                  Exportar Excel
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-danger me-3"
+                  id="btnExportPDF"
+                >
+                  Exportar PDF
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-success"
+                  id="btnRefresh"
+                >
+                  Refrescar
+                </button>
+              </div>
+            </div>
+            <div class="card-body p-0 table-responsive">
+              <table
+                class="table table-hover table-sm align-middle mb-0"
+                id="contractsTable"
+              >
+                <thead id="tableHead"></thead>
+                <tbody id="contractsTableBody"></tbody>
+              </table>
+              <div
+                class="d-flex justify-content-between align-items-center p-3"
+              >
+                <div>
+                  <button class="btn btn-secondary btn-sm" id="prevPageBtn">
+                    ← Anterior
+                  </button>
+                  <button class="btn btn-secondary btn-sm" id="nextPageBtn">
+                    Siguiente →
+                  </button>
+                </div>
+                <div id="paginationInfo" class="small text-muted"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Botón opcional para scroll horizontal en la tabla de contratos -->
+          <div class="text-end mt-2">
+            <button
+              class="btn btn-outline-secondary btn-sm"
+              onclick="scrollTableRight()"
+            >
+              → Ver más columnas
+            </button>
+          </div>
+        </div>
+
+    <!-- SCRIPTS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+    <script>
+      /* ================== TABLE OF CONTRACTS CONFIG ================== */
+      const viewColumnsConfig = {
+    		  contracts_list: [
+    			    { key: "home_id",                      label: "🏠 Home ID" },
+    			    { key: "building_id",                  label: "🏢 Building ID" },
+    			    { key: "subtype",                      label: "🔧 Subtype" },
+    			    { key: "access_location",              label: "📍 PoP / Location" },
+    			    { key: "aufgabenstatus",               label: "📄 Contract Status" },
+    			    { key: "order_date",                   label: "🗓️ Order Date" },
+    			    { key: "contract_age_weeks",           label: "📆 Age (weeks)" },
+    			    { key: "building_status",              label: "🏠 Building Status" },
+    			    { key: "building_status_updated_at",   label: "⏱️ Last Update (Building)" },
+    			    { key: "building_action_holder",       label: "👤 Holder (Building)" },
+    			    { key: "building_hausbegehung_status", label: "🚪 Home Visit (Building)" },
+    			    { key: "unit_status",                  label: "🏘️ Unit Status" },
+    			    { key: "unit_status_updated_at",       label: "⏱️ Last Update (Unit)" },
+    			    { key: "unit_action_holder",           label: "👤 Holder (Unit)" },
+    			    { key: "unit_hausbegehung_status",     label: "🚪 Home Visit (Unit)" },
+    			    { key: "anschlussstatus",              label: "🔌 Anschlussstatus" },
+    			    { key: "tiefbaudatum",                 label: "🛠️ Civil Work Date" },
+    			    { key: "activeoperator_name_from_tri", label: "📡 Operator" },
+    			    { key: "outsource_name",               label: "🏗️ Subcontractor" }
+    			  ],
+    			  planner: [
+    				  { key: "auftragsnummer", label: "Home ID" },
+    				  { key: "building_id", label: "🏢 Building ID" },
+    				  { key: "projektname", label: "Projektname" },
+    				  { key: "projektcode_intern", label: "Projektcode Intern" },
+    				  { key: "anschlussstatus", label: "🔌 Anschlussstatus" },
+    				  { key: "teilpolygon", label: "Teilpolygon" },
+    				  { key: "dp_name", label: "DP Name" },
+    				  { key: "kabel_id_from_engineering", label: "Kabel ID from Engineering" },
+    				  { key: "tzip", label: "TZIP" },
+    				  { key: "strasse", label: "🛣️ Straße" },
+    				  { key: "hausnummer", label: "🏠 Hausnummer" },
+    				  { key: "hausnummernzusatz", label: "🏠 Hausnummer Zusatz" },
+    				  { key: "unit", label: "🔢 Unit" },
+    				  { key: "grundna", label: "GrundNA" },
+    				  { key: "zustimmung", label: "Zustimmung" },
+    				  { key: "baulist_datum", label: "📅 Baulist Datum" },
+    				  { key: "civiel_startdatum", label: "📅 Civiel Startdatum" },
+    				  { key: "tiefbaudatum", label: "📅 Tiefbaudatum" },
+    				  { key: "civiel_einddatum", label: "📅 Civiel Einddatum" },
+    				  { key: "plandatum", label: "📅 Plandatum" },
+    				  { key: "reihe_from_engineering", label: "Reihe from Engineering" },
+    				  { key: "schrank_from_engineering", label: "Schrank from Engineering" },
+    				  { key: "block_from_engineering", label: "Block from Engineering" },
+    				  { key: "odf_catv_position_from_engineering", label: "ODF CATV Position" },
+    				  { key: "odf_ip_from_engineering", label: "ODF IP from Engineering" },
+    				  { key: "odf_ip_position_from_engineering", label: "ODF IP Position" },
+    				  { key: "has_ip_fiber", label: "HAS IP Fiber" },
+    				  { key: "has_tv_fiber", label: "HAS TV Fiber" },
+    				  { key: "gebaeudetyp", label: "Gebäudetyp" },
+    				  { key: "order_template", label: "📄 Order Template" },
+    				  { key: "datum_hausbegehung", label: "📅 Datum Hausbegehung" },
+    				  { key: "status_hausbegehung", label: "📍 Status Hausbegehung" },
+    				  { key: "has_aktivierung_geplant", label: "HAS Aktivierung Geplant" },
+    				  { key: "kunde_zufrieden_installation", label: "🧑‍💼 Kunde Zufrieden Installation" },
+    				  { key: "auftragsnummer_extern", label: "Auftragsnummer Extern" },
+    				  { key: "totale_lengte", label: "📏 Totale Länge" },
+    				  { key: "dp_tiefbau_fertig", label: "🚧 DP Tiefbau Fertig" },
+    				  { key: "graaflengte_produktion_totaal", label: "📏 Graaflänge Produktion Total" },
+    				  { key: "nog_te_graven", label: "Nog te Graven" },
+    				  { key: "tknr", label: "TKNr" },
+    				  { key: "farbe_rohre", label: "🎨 Farbe Rohre" },
+    				  { key: "datum_hausanschluss", label: "📅 Datum Hausanschluss" },
+    				  { key: "fertigstellungsdatum_teilstueck", label: "📅 Fertigstellungsdatum Teilstück" },
+    				  { key: "ready_108", label: "Ready 108" },
+    				  { key: "abhaengigkeit", label: "Abhängigkeit" },
+    				  { key: "gartenbohrung_durchgefuehrt", label: "🪛 Gartenbohrung durchgeführt" },
+    				  { key: "hc_hup_standort_hup", label: "📍 HUP Standort" },
+    				  { key: "activeoperator_name_from_tri", label: "📡 Operator" },
+    				  { key: "bautyp", label: "🏗️ Bautyp" }
+    				]
+,
+task_units: [
+	  { key: "assignment_number", label: "📄 Assignment Number" },
+	  { key: "building_id", label: "🏢 Building ID" },
+	  { key: "project_number", label: "📁 Project Number" },
+	  { key: "ap_from_tri", label: "📡 AP (TRI)" },
+	  { key: "dp", label: "📍 DP" },
+	  { key: "street", label: "🛣️ Street" },
+	  { key: "zip_code", label: "📮 ZIP Code" },
+	  { key: "house_number", label: "🏠 House Number" },
+	  { key: "house_number_addition", label: "➕ House No. Addition" },
+	  { key: "room", label: "🚪 Room" },
+	  { key: "order_template", label: "📑 Order Template" },
+	  { key: "status", label: "📋 Status" },
+	  { key: "anschlussstatus", label: "🔌 Anschlussstatus" },
+	  { key: "grundna", label: "⚙️ GrundNA" },
+	  { key: "garden_bore_done", label: "🌿 Garden Bore Done" },
+	  { key: "url_faser_am_hauswand", label: "🌐 Fiber URL" },
+	  { key: "hv_kabellange_einfuhrung_hup", label: "📏 Cable Length to HÜP" },
+	  { key: "servicepaket_nicht_verreinbart_instaliert", label: "📦 Service Package Not Installed" },
+	  { key: "montagetechniker", label: "👷 Installer" },
+	  { key: "gartenbohrung_fertig", label: "🌱 Garden Drilling Done" },
+	  { key: "hc_hup_standort_hup_another", label: "📍 HUP Location Alt." },
+	  { key: "hv_standort_hup", label: "📍 HUP Location" },
+	  { key: "status_1", label: "📋 Status 1" },
+	  { key: "number_of_we", label: "🏘️ Number of Units" },
+	  { key: "hc_hup_standort_hup_another_1", label: "📍 HUP Location Alt. 2" },
+	  { key: "name_des_hausbeghers", label: "👤 House Visit Contact" },
+	  { key: "anzahl_eingeblasene_hp_adressen", label: "🔢 HP Blown Addresses" },
+	  { key: "spleisse_ap_bereit", label: "💡 Splice AP Ready" },
+	  { key: "spleisse_dp_bereit", label: "🔧 Splice DP Ready" },
+	  { key: "fertigstellungsdatum_teilstuck", label: "📅 Completion Date (Segment)" },
+	  { key: "hv_date", label: "📅 HV Date" },
+	  { key: "erklarung_status", label: "📄 Explanation Status" },
+	  { key: "erklarungsstatus", label: "📄 Explanation Substatus" },
+	  { key: "aktivation_bemerkung", label: "📝 Activation Notes" },
+	  { key: "ready_108", label: "✅ Ready 108" },
+	  { key: "subtype_from_tri", label: "📂 Subtype (TRI)" },
+	  { key: "serviceprovider_from_tri", label: "🏢 Service Provider Code" },
+	  { key: "serviceprovider_name_from_tri", label: "🏢 Service Provider" },
+	  { key: "anzahl_we", label: "🏘️ Units Count" },
+	  { key: "bis_we_anzahl", label: "↔️ Units Range" },
+	  { key: "name", label: "👤 Name" },
+	  { key: "status_updated_at", label: "⏱️ Status Updated" },
+	  { key: "action_holder", label: "👤 Action Holder" },
+	  { key: "active_operator", label: "📡 Active Operator" },
+	  { key: "tiefbau_date", label: "🚧 Civil Work Date" },
+	  { key: "place", label: "📍 Place" },
+	  { key: "status_hausbegehung", label: "🚪 House Visit Status" },
+	  { key: "status_hausbegehung_hv_s_from_house", label: "🚪 Visit HV From House" }
+	],
+
+
+        buildings_task: [
+          "building_id", "building_status", "building_action_holder", " "
+        ],
+        ar_web: [
+        	  { key: "home_id", label: "🏠 Home ID" },
+        	  { key: "building_id", label: "🏢 Building ID" },
+        	  { key: "cable_id", label: "🔌 Cable ID" },
+        	  { key: "plot", label: "🧭 Plot" },
+        	  { key: "tzip", label: "📮 TZIP" },
+        	  { key: "number", label: "# House Number" },
+        	  { key: "suffix", label: "🔤 Suffix" },
+        	  { key: "unit", label: "🏘️ Unit" },
+        	  { key: "street", label: "🛣️ Street" },
+        	  { key: "city", label: "🏙️ City" },
+        	  { key: "date_last_update", label: "📆 Last Update" },
+        	  { key: "last_updated_by", label: "👤 Updated By" },
+        	  { key: "start_date_civil_work", label: "🚧 Civil Work Start" },
+        	  { key: "plan_date_has", label: "📅 Plan HAS Date" },
+        	  { key: "has_date", label: "📅 HAS Date" },
+        	  { key: "hp_plandate", label: "📅 HP Plan Date" },
+        	  { key: "delivery_date_passive", label: "📦 Passive Delivery" },
+        	  { key: "delivery_status", label: "📋 Delivery Status" },
+        	  { key: "reason_nc", label: "❗ Reason NC" },
+        	  { key: "area_pop", label: "📍 PoP Area" },
+        	  { key: "row", label: "🧱 Row" },
+        	  { key: "frame", label: "🖼️ Frame" },
+        	  { key: "block", label: "🔲 Block" },
+        	  { key: "odf", label: "🔌 ODF" },
+        	  { key: "odf_position", label: "📍 ODF Pos." },
+        	  { key: "odf_status", label: "📊 ODF Status" },
+        	  { key: "odf_last_update", label: "📆 ODF Updated" },
+        	  { key: "connection_id", label: "🔗 Conn. ID" },
+        	  { key: "odfcatv", label: "📡 CATV ODF" },
+        	  { key: "odfcatv_position", label: "📍 CATV Pos." },
+        	  { key: "odfcatv_status", label: "📊 CATV Status" },
+        	  { key: "odfcatv_last_update", label: "📆 CATV Updated" },
+        	  { key: "connection_id_catv", label: "🔗 CATV Conn. ID" },
+        	  { key: "ftu_type", label: "🔧 FTU Type" },
+        	  { key: "permission_to_build", label: "📝 Permiso Obra" },
+        	  { key: "building_type", label: "🏢 Type Building" },
+        	  { key: "type_of_construction", label: "🏗️ Construction Type" },
+        	  { key: "project_code", label: "🧾 Project Code" },
+        	  { key: "project_name", label: "📁 Project Name" },
+        	  { key: "connection_area_number", label: "📍 Conn. Area No." },
+        	  { key: "connection_area_name", label: "📍 Conn. Area Name" },
+        	  { key: "contractor", label: "👷 Contractor" },
+        	  { key: "project_construction_type", label: "🏗️ Project Const. Type" },
+        	  { key: "remark", label: "🗒️ Remark" },
+        	  { key: "strand_id", label: "🧵 Strand ID" },
+        	  { key: "throughput_dependency", label: "🔄 Dependency" },
+        	  { key: "floor", label: "🏢 Floor" },
+        	  { key: "flat_position", label: "📐 Flat Pos." },
+        	  { key: "netbuildtype", label: "🌐 Net Build Type" },
+        	  { key: "network_type", label: "🌍 Network Type" },
+        	  { key: "projectstatus", label: "📊 Project Status" }
+        	],
+        
+        	baulist_highlights: [
+        		  { key: "home_id", label: "🏠 Home ID" },
+        		  { key: "building_id", label: "🏢 Building ID" },
+        		  { key: "order_id", label: "🆔 Order ID" },
+        		  { key: "order_date", label: "📅 Order Date" },
+        		  { key: "project_code", label: "🔢 Project Code" },
+        		  { key: "project_name", label: "📛 Project Name" },
+        		  { key: "area_pop", label: "📍 Area PoP" },
+        		  { key: "city", label: "🏙️ City" },
+        		  { key: "tzip", label: "📬 ZIP" },
+        		  { key: "street", label: "🛣️ Street" },
+        		  { key: "house_number", label: "🏠 Nº" },
+        		  { key: "suffix", label: "🔤 Suffix" },
+        		  { key: "unit", label: "🏘️ Unit" },
+        		  { key: "completion_date", label: "✅ Completion Date" },
+        		  { key: "connection_date", label: "🔌 Connection Date" },
+        		  { key: "delivery_status", label: "📦 Status" },
+        		  { key: "reason_nc", label: "❗ Reason NC" },
+        		  { key: "provider", label: "🏗️ Provider" },
+        		  { key: "co_id", label: "🆔 CO ID" },
+        		  { key: "firstname", label: "👤 First Name" },
+        		  { key: "name", label: "👤 Last Name" },
+        		  { key: "phone", label: "📞 Phone" },
+        		  { key: "cell_phone", label: "📱 Cell" },
+        		  { key: "mail", label: "✉️ Email" },
+        		  { key: "task_status", label: "📌 Task Status" },
+        		  { key: "group_name", label: "🧩 Group" },
+        		  { key: "catv", label: "📺 CATV" },
+        		  { key: "kid", label: "🧾 KID" },
+        		  { key: "hold_message", label: "⏸️ Hold Msg" },
+        		  { key: "subtype", label: "🔧 Subtype" },
+        		  { key: "network_type", label: "🌐 Net Type" },
+        		  { key: "change_type", label: "🔁 Change Type" },
+        		  { key: "change_week", label: "📆 Week (Change)" },
+        		  { key: "change_year", label: "📆 Year (Change)" },
+        		  { key: "order_week", label: "🗓️ Order Week" },
+        		  { key: "order_year", label: "🗓️ Order Year" }
+        		],
+          
+        		activations_highlights: [
+        			  { key: "home_id", label: "🏠 Home ID" },
+        			  { key: "building_id", label: "🏢 Building ID" },
+        			  { key: "bestellnummer", label: "🆔 Order Number" },
+        			  { key: "bestelldatum", label: "📅 Order Date" },
+        			  { key: "projectcode", label: "🔢 Project Code" },
+        			  { key: "sp_name", label: "🏗️ Service Provider" },
+        			  { key: "access_location", label: "📍 Location / PoP" },
+        			  { key: "ort", label: "🏙️ City" },
+        			  { key: "zipcode", label: "📬 ZIP Code" },
+        			  { key: "straße", label: "🛣️ Street" },
+        			  { key: "nummer", label: "🏠 Nº" },
+        			  { key: "nrsusatz", label: "🔤 Suffix" },
+        			  { key: "weitere_susatz", label: "🏘️ Unit" },
+        			  { key: "lieferdatum", label: "📦 Delivery Date" },
+        			  { key: "wunschdatum", label: "🗓️ Desired Date" },
+        			  { key: "typ", label: "🔧 Type" },
+        			  { key: "port_zuweisung", label: "🔌 Port Assignment" },
+        			  { key: "benutzername", label: "👤 Username" },
+        			  { key: "name", label: "👤 Name" },
+        			  { key: "telefon", label: "📞 Phone" },
+        			  { key: "handy", label: "📱 Mobile" },
+        			  { key: "email", label: "✉️ Email" },
+        			  { key: "aufgabenstatus", label: "📌 Task Status" },
+        			  { key: "netzwerktyp", label: "🌐 Network Type" },
+        			  { key: "catv", label: "📺 CATV" },
+        			  { key: "kennwort", label: "🔐 Password" },
+        			  { key: "subtype", label: "🔧 Subtype" },
+        			  { key: "week", label: "📆 Week" },
+        			  { key: "year", label: "📆 Year" }
+        			],
+
+
+        			buildings_status_extended: [
+        				  { key: "home_id", label: "🏠 Home ID" },
+        				  { key: "building_id", label: "🏢 Building ID" },
+        				  { key: "subtype", label: "🔧 Subtype" },
+        				  { key: "access_location", label: "📍 PoP / Location" },
+        				  { key: "aufgabenstatus", label: "📌 Task Status" },
+        				  { key: "weitere_susatz", label: "🏘️ Unit ID" },
+        				  { key: "anschlussstatus_contracts", label: "🔌 Anschlussstatus" },
+        				  { key: "building_status", label: "🏠 Building Status" },
+        				  { key: "status_updated_at", label: "⏱️ Last Update" },
+        				  { key: "action_holder", label: "👤 Holder" },
+        				  { key: "building_hausbegehung_status", label: "🚪 Home Visit (Building)" },
+        				  { key: "grundna", label: "📄 GrundNA" },
+        				  { key: "tiefbaudatum", label: "🛠️ Civil Work Date" },
+        				  { key: "activeoperator_name_from_tri", label: "📡 Operator" },
+        				  { key: "total_units", label: "🔢 Total Units" },
+        				  { key: "planner_contracts", label: "📑 Planner Contracts" },
+        				  { key: "pom_contracts", label: "📑 POM Contracts" },
+        				  { key: "pha", label: "⚙️ PHA" },
+        				  { key: "pha_reason", label: "📝 PHA Reason" },
+        				  { key: "has_class", label: "🏷️ HAS Class" },
+        				  { key: "has0_count", label: "0️⃣ HAS0" },
+        				  { key: "has1_count", label: "1️⃣ HAS1" },
+        				  { key: "has2_count", label: "2️⃣ HAS2" },
+        				  { key: "unit_statuses", label: "🏘️ Unit Statuses" },
+        				  { key: "unit_statuses_updated_at", label: "📆 Units Updated At" },
+        				  { key: "unit_action_holders", label: "👥 Unit Holders" },
+        				  { key: "hausbegehung_units_statuses", label: "🚪 Visits (Units)" }
+        				]
+};
+
+
+      let currentPage = 0;
+      const pageSize = 10;
+      let aggregationChart = null;
+      
+   // ------- Campos de agregación permitidos por vista -------
+      const aggregationFieldsByView = {
+		  contracts_list: ["access_location", "subtype", "aufgabenstatus", "building_status", "unit_status", "anschlussstatus", "building_id","home_id" ,"order_date","unit_hausbegehung_status", "unit_action_holder", "unit_hausbegehung_status", "building_action_holder", "building_hausbegehung_status", "activeoperator_name_from_tri", "outsource_name"],
+		  buildings_status_extended: ["access_location", "pha", "has_class", "building_status", "aufgabenstatus"],
+		  baulist_highlights: ["order_year","subtype","area_pop","order_date","delivery_status", "task_status", "network_type", "group_name", "order_week"],
+		  buildings_task: ["building_id", "building_status", "building_action_holder", "aufgabenstatus"],
+		  planner: ["dp_name", "grundna","ready_108","gebaeudetyp", "anschlussstatus", "order_template", "tiefbaudatum", "building_status"],
+		  task_units: ["ap_from_tri","status_1","building_id", "project_number", "assignment_number", "dp", "street", "zip_code", "house_number", "house_number_addition", "room", "order_template", "status", "anschlussstatus", "grundna", "garden_bore_done", "url_faser_am_hauswand", "hv_kabellange_einfuhrung_hup", "servicepaket_nicht_verreinbart_instaliert", "montagetechniker", "gartenbohrung_fertig", "hc_hup_standort_hup_another","hv_standort_hup","number_of_we","hc_hup_standort_hup_another_1","name_des_hausbeghers","anzahl_eingeblasene_hp_adressen","spleisse_ap_bereit","spleisse_dp_bereit","fertigstellungsdatum_teilstuck","hv_date","erklarung_status","erklarungsstatus","aktivation_bemerkung","ready_108","subtype_from_tri","serviceprovider_from_tri","serviceprovider_name_from_tri","anzahl_we","bis_we_anzahl"],
+		  activations_highlights: [
+			  "access_location",
+			  "year",
+			  "bestellnummer",
+			  "bestelldatum",
+			  "ort",
+			  "zipcode",
+			  "aufgabenstatus",
+			  "typ",
+			  "subtype",
+			  "week"
+			],
+			            ar_web: ["project_name","delivery_status","project_code","home_id","reason_nc","connection_area_number","connection_area_name","odfcatv_position","odfcatv_last_update","odfcatv_status","odfcatv"]
+
+        };
+
+
+      
+      function populateAggregationFields(viewName) {
+    	  const columns = viewColumnsConfig[viewName] || [];
+    	  const html = columns
+    	    .map(col => `<option value="${col.key}">${col.label}</option>`)
+    	    .join("");
+    	  document.getElementById("aggregationField1").innerHTML = html;
+    	  document.getElementById("aggregationField2").innerHTML = html;
+    	}
+
+
+      /* ================== BUILD HEADERS FOR TABLE OF CONTRACTS ================== */
+      function buildTableHeaders() {
+  const viewName = document.querySelector("#viewSelectorNav .nav-link.active")
+                             .dataset.view;
+  const columns  = viewColumnsConfig[viewName] || [];
+  const thead    = document.getElementById("tableHead");
+  thead.innerHTML = "";
+
+  // fila de títulos
+  const trTitles = document.createElement("tr");
+  columns.forEach(({ label }) => {
+	  const th = document.createElement("th");
+	  th.innerHTML = `<div class="d-flex align-items-center gap-1 justify-content-center text-nowrap">
+	                    <span class="fw-semibold">${label}</span>
+	                  </div>`;
+	  trTitles.appendChild(th);
+	});
+
+  thead.appendChild(trTitles);
+
+  // fila de filtros
+  const trFilters = document.createElement("tr");
+  columns.forEach(({ key }) => {
+    const th = document.createElement("th");
+    const input = document.createElement("input");
+    input.type        = "text";
+    input.className   = "column-filter form-control form-control-sm";
+    input.dataset.column = key;
+    input.placeholder = "Filtrar…";
+    input.addEventListener("input", () => {
+      currentPage = 0;
+      fetchContracts();
+      updateDashboard();
+    });
+    th.appendChild(input);
+    trFilters.appendChild(th);
+  });
+  thead.appendChild(trFilters);
+}
+      
+      function updateAggregationFieldOptions() {
+    	  const viewName = document.querySelector("#viewSelectorNav .nav-link.active")
+    	                            .dataset.view;
+    	  const allowed = aggregationFieldsByView[viewName] || [];
+    	  const sel1 = document.getElementById("aggregationField1");
+    	  const sel2 = document.getElementById("aggregationField2");
+
+    	  // construye opciones basándote en key + label
+    	  const columns = viewColumnsConfig[viewName] || [];
+    	  [sel1, sel2].forEach(sel => {
+    	    sel.innerHTML = columns
+    	      .filter(col => allowed.includes(col.key))
+    	      .map(col => `<option value="${col.key}">${col.label}</option>`)
+    	      .join("");
+    	  });
+
+    	  // valores por defecto
+    	  if (allowed.length > 1) {
+    	    sel1.value = allowed[0];
+    	    sel2.value = allowed[1];
+    	  }
+    	}
+
+
+      /* ================== GET FILTERS ================== */
+      function getFilters() {
+		  const filters = {};
+		  document.querySelectorAll(".column-filter").forEach((input) => {
+		    const key = input.getAttribute("data-column");
+		    let value = input.value.trim();
+		
+		    if (value) {
+		      // Permitir valores múltiples separados por coma para TODOS los campos
+		      value = value
+		        .split(",")
+		        .map(v => v.trim())
+		        .filter(v => v !== "")
+		        .join(","); // Enviar como "val1,val2"
+		
+		      filters[key] = value;
+		    }
+		  });
+		  return filters;
+		}
+
+
+      /* ================== FETCH CONTRACTS ================== */
+      function fetchContracts() {
+        const filters = getFilters();
+        const viewName = document.querySelector("#viewSelectorNav .nav-link.active")
+        .getAttribute("data-view");
+        const requestBody = {
+          draw: 1,
+          start: currentPage * pageSize,
+          length: pageSize,
+          search: { value: "" },
+          columns: [],
+          filters: { ...filters, view: viewName },
+        };
+
+        fetch("/api/contracts/multiview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        })
+          .then((resp) => resp.json())
+          .then((data) => {
+            if (data.error) {
+              alert("Error: " + data.error);
+              return;
+            }
+            renderTable(data.data);
+            renderPagination(data.recordsFiltered, data.recordsTotal);
+          })
+          .catch((err) => {
+            console.error("Error:", err);
+            alert("Error al obtener contratos");
+          });
+      }
+
+      /* ================== RENDER CONTRACTS TABLE ================== */
+      function renderTable(rows) {
+		  const tbody = document.getElementById("contractsTableBody");
+		  const viewName = document.querySelector("#viewSelectorNav .nav-link.active").dataset.view;
+		  const columns = viewColumnsConfig[viewName] || [];
+		  const dateFields = ["order_date", "bestelldatum", "lieferdatum", "wunschdatum", "tiefbaudatum", "status_updated_at", "unit_status_updated_at","civiel_datum", "civiel_startdatum", "civiel_einddatum", "baulist_datum", "datum_hausbegehung", "datum_hausanschluss", "fertigstellungsdatum_teilstueck", "hv_date", "ready_108", "auftrag_von_tri_datum", "auftrag_von_tri_bis_datum", "auftrag_von_tri_datum_hausbegehung", "auftrag_von_tri_bis_datum_hausbegehung"];
+		
+		  tbody.innerHTML = "";
+		
+		  if (!rows || rows.length === 0) {
+		    const tr = document.createElement("tr");
+		    tr.innerHTML = `<td colspan="${columns.length}" class="text-center py-3">No hay datos</td>`;
+		    tbody.appendChild(tr);
+		    return;
+		  }
+		
+		  rows.forEach(row => {
+		    const tr = document.createElement("tr");
+		    columns.forEach(({ key }) => {
+		      const td = document.createElement("td");
+		
+		      if (["anschlussstatus", "anschlussstatus_contracts"].includes(key)) {
+		        const status = row[key];
+		        const desc = {
+		          "0": "Planificada", "91": "No prevista", "105": "DP preparado", "108": "Hasta acera",
+		          "102": "Preparado en acera", "109": "Hasta fachada", "103": "Preparado en fachada",
+		          "107": "Canalización interna", "101": "Fibra hasta HÜP", "100": "Conectado"
+		        }[status] || "Desconocido";
+		
+		        const colors = {
+		          "0": "#adb5bd", "91": "#dee2e6", "105": "#ffcc00", "108": "#ffd166", "102": "#ffe066",
+		          "109": "#f8961e", "103": "#f3722c", "107": "#f94144", "101": "#1982c4", "100": "#2a9d8f"
+		        };
+		        const color = colors[status] || "#ced4da";
+		
+		        td.innerHTML = `
+		          <span class="badge text-dark" style="background:${color};cursor:help" title="${desc}">
+		            ${status}
+		          </span>`;
+		      } else if (dateFields.includes(key)) {
+		    	  const raw = row[key];
+
+		    	  // Verifica que sea una cadena válida Y que no sea null/vacía
+		    	  if (raw && typeof raw === "string" && raw.trim() !== "") {
+		    	    const dateObj = new Date(raw);
+
+		    	    if (!isNaN(dateObj.getTime()) && dateObj.getFullYear() !== 1970) {
+		    	      const formatted = dateObj.toISOString().slice(0, 10);
+		    	      const weekNumber = getISOWeekNumber(dateObj);
+		    	      const tooltip = `${raw} • Semana ${weekNumber}`;
+		    	      td.innerHTML = `<span title="${tooltip}">${formatted}</span>`;
+		    	    } else {
+		    	      td.textContent = ""; // Fecha inválida
+		    	    }
+		    	  } else {
+		    	    td.textContent = ""; // nula o vacía
+		    	  }
+		    	}
+
+ else {
+		        td.textContent = row[key] ?? "";
+		      }
+		
+		      tr.appendChild(td);
+		    });
+		    tbody.appendChild(tr);
+		  });
+		}
+
+		function getStatusClass(status) {
+		  const value = status?.toString().toLowerCase();
+		  if (["108", "aktiv"].includes(value)) return "status-ok";
+		  if (["109", "pendiente", "in progress"].includes(value)) return "status-warning";
+		  return "status-error";
+		}
+		
+		function getISOWeekNumber(date) {
+			  const tempDate = new Date(date.getTime());
+			  tempDate.setHours(0, 0, 0, 0);
+			  // Jueves en la semana actual determina el año de la semana
+			  tempDate.setDate(tempDate.getDate() + 3 - (tempDate.getDay() + 6) % 7);
+			  const week1 = new Date(tempDate.getFullYear(), 0, 4);
+			  return 1 + Math.round(((tempDate - week1) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+			}
+		
+		function getISOWeekString(date) {
+			  const tempDate = new Date(date.getTime());
+			  tempDate.setHours(0, 0, 0, 0);
+			  tempDate.setDate(tempDate.getDate() + 3 - ((tempDate.getDay() + 6) % 7));
+			  const week1 = new Date(tempDate.getFullYear(), 0, 4);
+			  const isoYear = tempDate.getFullYear();
+			  const weekNumber = 1 + Math.round(((tempDate - week1) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
+			  return `${isoYear}-W${String(weekNumber).padStart(2, '0')}`;
+			}
+
+
+
+      /* ================== PAGINATION ================== */
+      function renderPagination(recordsFiltered, recordsTotal) {
+        let totalPages = Math.ceil(recordsFiltered / pageSize);
+        if (totalPages < 1) totalPages = 1;
+        document.getElementById(
+          "paginationInfo"
+        ).textContent = `Página ${currentPage + 1} de ${totalPages}, Total: ${recordsFiltered}/${recordsTotal}`;
+        document.getElementById("prevPageBtn").disabled = currentPage === 0;
+        document.getElementById("nextPageBtn").disabled =
+          currentPage >= totalPages - 1;
+      }
+
+      /* ================== DASHBOARD STATS (AGRUPACIÓN) ================== */
+      let dynamicStatsRows = [];
+      let currentSubcategories = [];
+
+      function updateDashboard() {
+        let filters = getFilters();
+        Object.keys(filters).forEach((key) => {
+          if (key.toLowerCase() === "source" || key.toLowerCase() === "view") {
+            delete filters[key];
+          }
+        });
+        filters.view = document.querySelector("#viewSelectorNav .nav-link.active").getAttribute("data-view");
+
+        const field1 = document.getElementById("aggregationField1").value;
+        const field2 = document.getElementById("aggregationField2").value;
+        const isHasAggregation = field2 === "has" || field2 === "has_class";
+        const url = isHasAggregation
+          ? "/api/contracts/aggregation/has-summary"
+          : "/api/contracts/aggregation";
+        const requestBody = isHasAggregation
+          ? { groupField: field1, filters: filters }
+          : { field1: field1, field2: field2, filters: filters };
+
+        fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        })
+          .then((resp) => resp.json())
+          .then((data) => {
+            if (!Array.isArray(data)) {
+              console.error("La respuesta de la agregación no es un arreglo:", data);
+              return;
+            }
+            let summary = {};
+            let subcategories = new Set();
+            if (isHasAggregation) {
+              data.forEach((item) => {
+                const groupKey = item.field || item.field1 || "N/A";
+                if (!summary[groupKey]) {
+                  summary[groupKey] = { HAS0: 0, HAS1: 0, HAS2: 0 };
+                }
+                summary[groupKey]["HAS0"] += item.has0 || 0;
+                summary[groupKey]["HAS1"] += item.has1 || 0;
+                summary[groupKey]["HAS2"] += item.has2 || 0;
+                subcategories.add("HAS0");
+                subcategories.add("HAS1");
+                subcategories.add("HAS2");
+              });
+            } else {
+              data.forEach((item) => {
+                const groupKey = item.field1 || "N/A";
+                const subKey = item.field2 || "N/A";
+                if (!summary[groupKey]) {
+                  summary[groupKey] = {};
+                }
+                summary[groupKey][subKey] =
+                  (summary[groupKey][subKey] || 0) + (item.count || 0);
+                subcategories.add(subKey);
+              });
+            }
+            subcategories = Array.from(subcategories);
+            currentSubcategories = subcategories;
+            buildDynamicStatsTable(summary, subcategories);
+          })
+          .catch((err) =>
+            console.error("Error fetching dashboard aggregated data:", err)
+          );
+
+        updateAggregationChart();
+      }
+
+      function buildDynamicStatsTable(summary, subcategories) {
+    	  // Calcula los top 15 subcategorías más comunes (columnas más relevantes)
+    	  const topColumns = subcategories
+    	    .map(sub => ({
+    	      key: sub,
+    	      total: Object.values(summary).reduce((sum, row) => sum + (row[sub] || 0), 0)
+    	    }))
+    	    .sort((a, b) => b.total - a.total)
+    	    .slice(0, 5) 
+    	    .map(col => col.key);
+
+    	  // Construimos filas
+    	  const rows = Object.entries(summary).map(([group, details]) => {
+    	    const total = topColumns.reduce((sum, sub) => sum + (details[sub] || 0), 0);
+    	    return { group, details, total };
+    	  }).sort((a, b) => b.total - a.total);
+
+    	  dynamicStatsRows = rows;
+    	  currentSubcategories = topColumns;
+    	  displayDynamicStatsRows(rows.slice(0, 5), topColumns);
+    	}
+
+
+      function displayDynamicStatsRows(rows, subcategories) {
+    	  const tbody = document.querySelector("#dashboardStatsTable tbody");
+    	  if (!tbody) return;
+    	  tbody.innerHTML = "";
+
+    	  const thead = document.querySelector("#dashboardStatsTable thead");
+    	  const groupFieldLabel = document.querySelector("#aggregationField1 option:checked")?.textContent || "Grupo";
+    	  let headerHTML = `<tr><th class="text-start">${groupFieldLabel}</th>`;
+
+    	  subcategories.forEach((sub) => {
+    	    headerHTML += `<th class="text-end">${sub}</th>`;
+    	  });
+    	  headerHTML += `<th class="text-end">Total</th></tr>`;
+    	  thead.innerHTML = headerHTML;
+
+    	  rows.forEach((row) => {
+    	    let tr = document.createElement("tr");
+    	    let cells = `<td class="text-start">${row.group}</td>`;
+    	    subcategories.forEach((sub) => {
+    	      const value = row.details[sub] || 0;
+    	      cells += `<td class="text-end">${value}</td>`;
+    	    });
+    	    cells += `<td class="text-end"><strong>${row.total}</strong></td>`;
+    	    tr.innerHTML = cells;
+    	    tbody.appendChild(tr);
+    	  });
+    	}
+
+
+      /* ================== SEARCH INPUT FOR STATS TABLE ================== */
+      document.addEventListener("DOMContentLoaded", () => {
+        const statsSearch = document.getElementById("statsSearchInput");
+        if (statsSearch) {
+          statsSearch.addEventListener("input", (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            let filtered = dynamicStatsRows.filter((row) =>
+              row.group.toLowerCase().includes(query)
+            );
+            if (!query) {
+              filtered = dynamicStatsRows.slice(0, 5);
+            }
+            displayDynamicStatsRows(filtered, currentSubcategories);
+          });
+        }
+      });
+
+      function updateAggregationChart() {
+    	  const filters = getFilters();
+    	  delete filters.source;
+    	  delete filters.view;
+
+    	  filters.view = document.querySelector("#viewSelectorNav .nav-link.active")?.getAttribute("data-view");
+
+    	  const field1 = document.getElementById("aggregationField1").value;
+    	  const field2 = document.getElementById("aggregationField2").value;
+    	  const isHasAggregation = field2 === "has" || field2 === "has_class";
+
+    	  const url = isHasAggregation
+    	    ? "/api/contracts/aggregation/has-summary"
+    	    : "/api/contracts/aggregation";
+
+    	  const requestBody = isHasAggregation
+    	    ? { groupField: field1, filters }
+    	    : { field1, field2, filters };
+
+    	  fetch(url, {
+    	    method: "POST",
+    	    headers: { "Content-Type": "application/json" },
+    	    body: JSON.stringify(requestBody),
+    	  })
+    	    .then((r) => r.json())
+    	    .then((data) => {
+    	      if (!Array.isArray(data)) {
+    	        console.error("Respuesta inesperada:", data);
+    	        return;
+    	      }
+
+    	      const grouped = {};
+    	      data.forEach((item) => {
+    	        const key = item.field || item.field1 || "(Sin valor)";
+    	        if (!grouped[key]) grouped[key] = {};
+    	        if (isHasAggregation) {
+    	          grouped[key].HAS0 = item.has0 || 0;
+    	          grouped[key].HAS1 = item.has1 || 0;
+    	          grouped[key].HAS2 = item.has2 || 0;
+    	        } else {
+    	          grouped[key][item.field2 || "(Sin valor)"] = item.count;
+    	        }
+    	      });
+
+    	      const sortedKeys = Object.keys(grouped).sort((a, b) => {
+    	        const sum = (o) => Object.values(o).reduce((acc, v) => acc + v, 0);
+    	        return sum(grouped[b]) - sum(grouped[a]);
+    	      });
+
+    	      const topKeys = sortedKeys.slice(0, 20);
+    	      const labels = topKeys.map((l) => l?.trim() || "(Sin valor)");
+
+    	      const series = isHasAggregation
+    	        ? ["HAS0", "HAS1", "HAS2"]
+    	        : Array.from(new Set(topKeys.flatMap(k => Object.keys(grouped[k]))));
+
+    	      // 🎨 Generador de colores únicos
+    	      function getUniqueColors(count) {
+    	        const baseColors = [
+    	          "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
+    	          "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"
+    	        ];
+    	        const colors = [];
+
+    	        for (let i = 0; i < count; i++) {
+    	          if (i < baseColors.length) {
+    	            colors.push(baseColors[i]);
+    	          } else {
+    	            const hue = (i * 137.5) % 360;
+    	            colors.push(`hsl(${hue}, 60%, 55%)`);
+    	          }
+    	        }
+
+    	        return colors;
+    	      }
+
+    	      const colors = getUniqueColors(series.length);
+
+    	      const datasets = series.map((serie, i) => ({
+    	        label: serie,
+    	        data: labels.map((l) => grouped[l]?.[serie] || 0),
+    	        backgroundColor: colors[i],
+    	        borderRadius: 4,
+    	        barPercentage: 0.8,
+    	        categoryPercentage: 0.9
+    	      }));
+
+    	      const ctx = document.getElementById("aggregationChart").getContext("2d");
+    	      if (aggregationChart) aggregationChart.destroy();
+    	      Chart.register(ChartDataLabels);
+
+    	      aggregationChart = new Chart(ctx, {
+    	        type: "bar",
+    	        data: {
+    	          labels: labels,
+    	          datasets: datasets,
+    	        },
+    	        options: {
+    	          responsive: true,
+    	          maintainAspectRatio: false,
+    	          interaction: { mode: "index", intersect: false },
+    	          scales: {
+    	            x: {
+    	              stacked: true,
+    	              ticks: {
+    	                maxRotation: 45,
+    	                callback: (label, idx) => {
+    	                  const lbl = labels[idx] || "";
+    	                  return lbl.length > 12 ? lbl.slice(0, 12) + "…" : lbl;
+    	                },
+    	              },
+    	              grid: { display: false },
+    	            },
+    	            y: {
+    	              stacked: true,
+    	              beginAtZero: true,
+    	              title: { display: true, text: "Total" }
+    	            },
+    	          },
+    	          plugins: {
+    	            title: {
+    	              display: true,
+    	              text: `Agregación: ${field1} vs ${isHasAggregation ? "HAS Class" : field2}`,
+    	              font: { size: 16, weight: "bold" }
+    	            },
+    	            legend: {
+    	              position: "top",
+    	              labels: { padding: 12, boxWidth: 14 }
+    	            },
+    	            tooltip: {
+    	              callbacks: {
+    	                title: (items) => labels[items[0].dataIndex],
+    	                label: (ctx) => {
+    	                  const value = ctx.parsed.y;
+    	                  const total = datasets.reduce((sum, ds) => sum + ds.data[ctx.dataIndex], 0);
+    	                  const pct = total ? ((value / total) * 100).toFixed(1) + "%" : "";
+    	                  return ` ${ctx.dataset.label}: ${value} (${pct})`;
+    	                }
+    	              }
+    	            },
+    	            datalabels: {
+    	              anchor: "center",
+    	              align: "center",
+    	              clamp: true,
+    	              color: "#fff",
+    	              font: { size: 10, weight: "bold" },
+    	              display: function (ctx) {
+    	                const value = ctx.dataset.data[ctx.dataIndex];
+    	                const total = ctx.chart.data.datasets.reduce((sum, ds) => sum + ds.data[ctx.dataIndex], 0);
+    	                const pct = total ? (value / total) * 100 : 0;
+    	                return pct >= 8;
+    	              },
+    	              formatter: function (value) {
+    	                return value > 0 ? `${value}` : "";
+    	              }
+    	            }
+    	          }
+    	        }
+    	      });
+    	    })
+    	    .catch((err) => console.error("Error en agregación:", err));
+    	}
+
+
+      /* ================== SCROLL TABLE RIGHT ================== */
+      function scrollTableRight() {
+        const container = document.querySelector(".table-responsive");
+        container.scrollLeft += 300;
+      }
+
+      /* ================== EVENT HANDLERS ================== */
+      document
+        .getElementById("btnRefresh")
+        .addEventListener("click", () => {
+          fetchContracts();
+          updateDashboard();
+        });
+      document
+        .getElementById("prevPageBtn")
+        .addEventListener("click", () => {
+          if (currentPage > 0) {
+            currentPage--;
+            fetchContracts();
+            updateDashboard();
+          }
+        });
+      document
+        .getElementById("nextPageBtn")
+        .addEventListener("click", () => {
+          currentPage++;
+          fetchContracts();
+          updateDashboard();
+        });
+      document
+        .getElementById("aggregationField1")
+        .addEventListener("change", () => {
+          updateDashboard();
+          updateAggregationChart();
+        });
+      document
+        .getElementById("aggregationField2")
+        .addEventListener("change", () => {
+          updateDashboard();
+          updateAggregationChart();
+        });
+      document
+      .querySelectorAll("#viewSelectorNav .nav-link")
+      .forEach(link => link.addEventListener("click", e => {
+        e.preventDefault();
+        // 1) marcar activo
+        document.querySelectorAll("#viewSelectorNav .nav-link")
+          .forEach(a => a.classList.remove("active"));
+        e.currentTarget.classList.add("active");
+
+        // 2) limpiar página y repoblar cabeceras y selects
+        currentPage = 0;
+        const viewName = e.currentTarget.getAttribute("data-view");
+        populateAggregationFields(viewName);
+        buildTableHeaders();
+        updateAggregationFieldOptions();
+        fetchContracts();
+        updateDashboard();
+      }));
+
+      // Carga inicial
+      document.addEventListener("DOMContentLoaded", () => {
+	  // fija tu vista por defecto…
+	  const defaultView = "contracts_list";
+	  document.querySelectorAll("#viewSelectorNav .nav-link")
+	    .forEach(a => a.classList.remove("active"));
+	  document.querySelector(`#viewSelectorNav .nav-link[data-view='${defaultView}']`)
+	    .classList.add("active");
+	
+	  populateAggregationFields(defaultView);
+	  buildTableHeaders();
+	  updateAggregationFieldOptions();
+	  fetchContracts();
+	  updateDashboard();
+	});
+
+
+      /* ================== EXPORT TO EXCEL/PDF ================== */
+      document
+        .getElementById("btnExportExcel")
+        .addEventListener("click", () => {
+          exportTableToCSV("Contratos.csv");
+        });
+      document
+        .getElementById("btnExportPDF")
+        .addEventListener("click", () => {
+          exportTableToPDF();
+        });
+
+      async function exportTableToPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: "l", unit: "pt", format: "a4" });
+        doc.setFontSize(12);
+        doc.text("Reporte de Contratos", 40, 40);
+        const rows = [];
+        const table = document.getElementById("contractsTable");
+        const tableRows = table.querySelectorAll("tr");
+        const headers = [];
+        tableRows[0].querySelectorAll("th").forEach((th) =>
+          headers.push(th.innerText)
+        );
+        rows.push(headers);
+
+        for (let i = 2; i < tableRows.length; i++) {
+          let rowData = [];
+          tableRows[i].querySelectorAll("td").forEach((td) =>
+            rowData.push(td.innerText)
+          );
+          if (rowData.length > 0) {
+            rows.push(rowData);
+          }
+        }
+
+        const cellWidth = 100;
+        let currentY = 70;
+        rows.forEach((row, idx) => {
+          let currentX = 40;
+          row.forEach((cell) => {
+            doc.text(cell, currentX, currentY, { maxWidth: cellWidth });
+            currentX += cellWidth;
+          });
+          currentY += 16;
+          if (currentY > 550) {
+            doc.addPage();
+            currentY = 40;
+          }
+        });
+        doc.save("Contratos.pdf");
+      }
+
+      async function fetchAllFilteredRows() {
+    	  const filters = getFilters();
+    	   const viewName = document
+    	  .querySelector("#viewSelectorNav .nav-link.active")
+    	  .getAttribute("data-view");
+    	  const requestBody = {
+    	    draw: 1, start: 0, length: -1, // -1 means "all" (backend should honor this)
+    	    search: { value: "" }, columns: [], filters: { ...filters, view: viewName }
+    	  };
+    	  const resp = await fetch("/api/contracts/multiview", {
+    	    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(requestBody)
+    	  });
+    	  const data = await resp.json();
+    	  if (data.error) throw new Error(data.error);
+    	  return data.data || [];
+    	}
+      
+      const globalSearchMapping = {
+    		  home_id: {
+    		    contracts_list: "home_id",
+    		    planner: "auftragsnummer",
+    		    buildings_status_extended: "home_id",
+    		    task_units: "assignment_number",
+    		    baulist_highlights: "home_id",
+    		    activations_highlights: "home_id",
+    		    buildings_task: "building_id",
+    		    ar_web: "home_id"
+    		  },
+    		  building_id: {
+    		    contracts_list: "building_id",
+    		    planner: "building_id",
+    		    buildings_status_extended: "building_id",
+    		    task_units: "building_id",
+    		    baulist_highlights: "building_id",
+    		    activations_highlights: "building_id",
+    		    buildings_task: "building_id",
+    		    ar_web: "building_id"
+    		  }
+    		};
+
+      
+      function runGlobalSearch() {
+    	  const homeId = document.getElementById("globalHomeIdSearch").value.trim();
+    	  const buildingId = document.getElementById("globalBuildingIdSearch").value.trim();
+    	  const viewName = document.querySelector("#viewSelectorNav .nav-link.active").getAttribute("data-view");
+
+    	  const allowedColumns = viewColumnsConfig[viewName] || [];
+
+    	  if (homeId) {
+    	    const columnName = (viewName === "contracts_list") ? "home_id"
+    	                     : (viewName === "planner") ? "auftragsnummer"
+    	                   	 : (viewName === "task_units") ? "assignment_number"
+    	                     : "home_id"; // por defecto
+
+    	    document.querySelectorAll(`.column-filter[data-column='${columnName}']`)
+    	      .forEach(input => input.value = homeId);
+    	  }
+
+    	  if (buildingId && allowedColumns.includes("building_id")) {
+    	    document.querySelectorAll(".column-filter[data-column='building_id']")
+    	      .forEach(input => input.value = buildingId);
+    	  }
+
+    	  fetchContracts();
+    	  updateDashboard();
+    	  fetchHomeDetails(homeId, buildingId);
+    	}
+
+
+    	function clearGlobalSearch() {
+    	  document.getElementById("globalHomeIdSearch").value = "";
+    	  document.getElementById("globalBuildingIdSearch").value = "";
+
+    	  document.querySelectorAll(".column-filter").forEach(input => input.value = "");
+
+    	  currentPage = 0;
+    	  fetchContracts();
+    	  updateDashboard();
+    	  fetchHomeDetails(homeId, buildingId);
+    	}
+    	
+    	function getActiveViewName() {
+    		  return document.querySelector("#viewSelectorNav .nav-link.active")?.dataset.view || "contracts_list";
+    		}
+
+    	function getBuildingIdFromHome(homeId) {
+    		  if (!homeId) return "";
+    		  // corta desde el penúltimo "_" para atrás
+    		  const idx = homeId.lastIndexOf("__");
+    		  return idx > -1 ? homeId.slice(0, idx + 1) : homeId;
+    		}
+
+    	
+    	async function fetchHomeDetails(homeId, buildingIdInput) {
+    		  /* elementos del DOM */
+    		  const elOrder   = document.getElementById("detailOrderDate");
+    		  const elStatus  = document.getElementById("detailStatus");
+    		  const elHas     = document.getElementById("detailActivated");
+    		  const elAnsch   = document.getElementById("detailActivationStatus");
+    		  const elactivdate = document.getElementById("detailActivationDate");
+    		  
+    		  if (!elOrder || !elStatus || !elHas || !elAnsch || !elactivdate) {
+    			  console.warn("❌ Elemento(s) del DOM no encontrados");
+    			  return;
+    			}
+
+    		  elOrder.textContent = elStatus.textContent = elHas.textContent = "-";
+    		  elAnsch.textContent = "-";
+
+    		  /*  ➜ buildingId definitivo  */
+    		  const buildingId = buildingIdInput || getBuildingIdFromHome(homeId);
+
+    		  /* --- 1. ORDER DATE  (baulist_highlights) -------------------- */
+    		  if (homeId) {
+    		    const row = await fetchOne({ home_id: homeId }, "baulist_highlights");
+    		    if (row?.order_date) elOrder.textContent = row.order_date.slice(0, 10);
+    		  }
+
+    		  /* --- 2. STATUS  (contracts_list) --------------------------- */
+    		  if (homeId) {
+    		    const row = await fetchOne({ home_id: homeId }, "contracts_list");
+    		    // usa cualquier alias que exista
+    		    const status = row?.contract_status || row?.task_status || row?.aufgabenstatus;
+    		    if (status) elStatus.textContent = status;
+    		  }
+
+    		  /* --- 3. HAS  (buildings_status_extended) ------------------- */
+    		  if (buildingId) {
+    		    const row = await fetchOne({ building_id: buildingId }, "buildings_status_extended");
+    		    if (row?.has_class) elHas.textContent = row.has_class;
+    		  }
+
+    		  /* --- 4. ANSCHLUSSSTATUS  (planner) ------------------------- */
+    		  if (buildingId) {
+    		    const row = await fetchOne({ building_id: buildingId }, "planner");
+    		    if (row?.anschlussstatus != null) elAnsch.innerHTML = renderStatusBadge(row.anschlussstatus);
+    		  }
+    		  /* --- 5. ACTIVATION DATE  (activations_highlights) --------- */
+    		  if (homeId) {
+    			  const rows = await fetchAll({ home_id: homeId }, "activations_highlights");
+
+    			  const completed = rows.find(r => r.aufgabenstatus?.trim().toUpperCase() === "COMPLETED");
+
+    			  if (completed?.year && completed?.week) {
+    				  console.log("✔️ completed row:", completed);
+
+    			    elactivdate.textContent = `${completed.year}-${String(completed.week).padStart(2, '0')}`;
+    			  } else {
+    			    elactivdate.textContent = "Pending";
+    			  }
+    		  }
+    		}
+
+    		/* Función auxiliar genérica: trae 1 fila */
+    		async function fetchOne(filterObj, view) {
+    		  const body = {
+    		    draw: 1, start: 0, length: 1,
+    		    search: { value: "" }, columns: [],
+    		    filters: { ...filterObj, view }
+    		  };
+    		  const resp = await fetch("/api/contracts/multiview", {
+    		    method: "POST",
+    		    headers: { "Content-Type": "application/json" },
+    		    body: JSON.stringify(body)
+    		  });
+    		  const data = await resp.json();
+    		  return data?.data?.[0];
+    		}
+    		
+    		async function fetchAll(filterObj, view) {
+    			  const body = {
+    			    draw: 1, start: 0, length: -1, // -1 para traer todos
+    			    search: { value: "" },
+    			    columns: [],
+    			    filters: { ...filterObj, view }
+    			  };
+    			  const resp = await fetch("/api/contracts/multiview", {
+    			    method: "POST",
+    			    headers: { "Content-Type": "application/json" },
+    			    body: JSON.stringify(body)
+    			  });
+    			  const data = await resp.json();
+    			  return data?.data || [];
+    			}
+
+
+
+    	function renderStatusBadge(status) {
+    		  const desc = {
+    		    "0": "Planificada", "91": "No prevista", "105": "DP preparado", "108": "Hasta acera",
+    		    "102": "Preparado en acera", "109": "Hasta fachada", "103": "Preparado en fachada",
+    		    "107": "Canalización interna", "101": "Fibra hasta HÜP", "100": "Conectado","99": "Eliminado",
+    		  }[status] || "Desconocido";
+
+    		  const colors = {
+    		    "0": "#adb5bd", "91": "#dee2e6", "105": "#ffcc00", "108": "#ffd166",
+    		    "102": "#ffe066", "109": "#f8961e", "103": "#f3722c", "107": "#f94144",
+    		    "101": "#1982c4", "100": "#2a9d8f","99": "#6c757d"
+    		  };
+    		  const color = colors[status] || "#ced4da";
+
+    		  return `
+    		    <span class="badge text-dark" style="background:${color};cursor:help" title="${desc}">
+    		      ${status}
+    		    </span>
+    		  `;
+    		}
+
+
+
+
+    	/* ---- Export to EXCEL ---- */
+    	document.getElementById("btnExportExcel").addEventListener("click", async () => {
+    	  try {
+    	    const rows = await fetchAllFilteredRows();
+    	    if (!rows.length) return alert("No hay datos para exportar");
+    	    const viewName = document.querySelector("#viewSelectorNav .nav-link.active")
+    	    .getAttribute("data-view");
+    	    const columns = viewColumnsConfig[viewName];
+    	    const csv = [columns.join(",")].concat(rows.map(r => columns.map(c => ("" + (r[c] ?? "")).replace(/[\n\r]+/g, " ")).join(","))).join("\n");
+    	    const blob = new Blob([csv], { type: "text/csv" });
+    	    const url = URL.createObjectURL(blob);
+    	    const a = document.createElement("a");
+    	    a.href = url;
+    	    a.download = "Contratos.csv";
+    	    a.click();
+    	    URL.revokeObjectURL(url);
+    	  } catch (err) {
+    	    console.error(err);
+    	    alert("No se pudo exportar a CSV");
+    	  }
+    	});
+    </script>
+  </body>
+</html>

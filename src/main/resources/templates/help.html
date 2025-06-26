@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+
+<head>
+    <title layout:fragment="title">Help</title>
+
+    <th:block layout:fragment="styles">
+        <style>
+            body {
+                background-color: #f4f6f9;
+            }
+
+            #helpSection {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding: 40px 20px;
+                min-height: calc(100vh - 120px);
+            }
+
+            .help-card {
+                background: white;
+                padding: 2rem;
+                border-radius: 10px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                max-width: 600px;
+                width: 100%;
+            }
+
+            .help-card h2 {
+                font-size: 1.8rem;
+                margin-bottom: 1rem;
+                font-weight: 600;
+                text-align: center;
+            }
+
+            .help-card p {
+                font-size: 1rem;
+                text-align: center;
+            }
+        </style>
+    </th:block>
+</head>
+
+<th:block layout:fragment="content">
+    <section id="helpSection">
+        <div class="help-card">
+            <h2>Help / Ayuda</h2>
+            <p>Documentación de uso, FAQs, enlaces a manuales, etc.</p>
+        </div>
+    </section>
+</th:block>
+
+</html>

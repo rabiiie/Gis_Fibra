@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}"
+      lang="es">
+
+<head>
+    <title layout:fragment="title">PLANRRR Review</title>
+
+    <style layout:fragment="styles">
+        .clickable { cursor: pointer; }
+    </style>
+</head>
+
+<body>
+<div layout:fragment="content">
+    <div class="container mt-4 mb-5">
+        <h1 class="mb-4">PLANRRR Review</h1>
+
+        <!-- Selección de POP -->
+        <form method="get" th:action="@{/reports/planr}" class="row g-3 mb-4 align-items-center">
+            <div class="col-auto">
+                <label for="pop" class="col-form-label">Selecciona un POP:</label>
+            </div>
+            <div class="col-auto">
+                <select id="pop" name="pop" class="form-select">
+                    <option value="" disabled selected>-- Selecciona un POP --</option>
+                    <option th:each="item : ${listaPops}"
+                            th:value="${item}"
+                            th:text="${item}"
+                            th:selected="${item == pop}"></option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">Ver Reporte</button>
+            </div>
+        </form>
+
+        <div th:if="${pop}">
+            <h4 class="text-secondary mb-3">
+                POP: <strong th:text="${pop}">POP</strong>
+            </h4>
+
+            <!-- 1. Number of units -->
+            <table class="table table-bordered table-striped mb-5">
+                <thead class="table-primary">
+                <tr><th></th><th>REAL</th><th>PLAN</th><th>Percentage</th></tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>1. Number of units</td>
+                    <td th:text="${realUnits}">0</td>
+                    <td th:text="${planUnits}">0</td>
+                    <td th:text="${unitsPct}">0%</td>
+                </tr>
+                </tbody>
+            </table>
+
+            <!-- 2. Number of addresses per status -->
+            <h5 class="mb-3">2. Number of addresses per status</h5>
+            <div class="row mb-5">
+                <!-- Delivered -->
+                <div class="col-md-6" th:if="${!#maps.isEmpty(deliveredResumen)}">
+                    <div class="card mb-3">
+                        <div class="card-header bg-primary text-white">Delivered</div>
+                        <div class="card-body p-0">
+                            <table class="table mb-0">
+                                <thead class="table-primary">
+                                <tr><th>Status</th><th>Number</th></tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="e : ${deliveredResumen.entrySet()}"
+                                    th:attr="data-delivery-status='Delivered'">
+                                    <td class="clickable"
+                                        th:text="${e.key}"
+                                        th:attr="data-type='status',data-key=${e.key}"></td>
+                                    <td th:text="${e.value}">0</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <!-- Not Delivered -->
+                <div class="col-md-6" th:if="${!#maps.isEmpty(notDeliveredResumen)}">
+                    <div class="card mb-3">
+                        <div class="card-header bg-primary text-white">Not Delivered</div>
+                        <div class="card-body p-0">
+                            <table class="table mb-0">
+                                <thead class="table-primary">
+                                <tr><th>Status</th><th>Number</th></tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="e : ${notDeliveredResumen.entrySet()}"
+                                    th:attr="data-delivery-status='Not Delivered'">
+                                    <td class="clickable"
+                                        th:text="${e.key}"
+                                        th:attr="data-type='status',data-key=${e.key}"></td>
+                                    <td th:text="${e.value}">0</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Number of addresses per Grundna con % -->
+            <div th:if="${!#lists.isEmpty(grundnaRows)}">
+                <h5 class="mb-3">3. Number of addresses per Grundna</h5>
+                <table id="grundnaTable" class="table table-bordered table-hover">
+                    <thead class="table-primary">
+                    <tr><th>Grundna</th><th>Number</th><th>Percentage</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row : ${grundnaRows}">
+                        <td class="clickable"
+                            th:text="${row.grundna}"
+                            th:attr="data-type='grundna',data-key=${row.grundna}"></td>
+                        <td th:text="${row.count}">0</td>
+                        <td th:text="${row.pct}">0%</td>
+                    </tr>
+                    </tbody>
+                    <tfoot>
+                    <tr>
+                        <th>Total</th>
+                        <th th:text="${totalGrundna}">0</th>
+                        <th>100%</th>
+                    </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal genérico para detalles por DP -->
+    <div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Conteo por DP</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-sm">
+                        <thead>
+                        <tr><th>DP</th><th>Count</th></tr>
+                        </thead>
+                        <tbody id="detailContent">
+                        <tr><td colspan="2" class="text-center">Cargando…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const pop = /*[[${pop}]]*/ '';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.clickable').forEach(td => td.addEventListener('click', async () => {
+            const type = td.getAttribute('data-type');
+            const key  = td.getAttribute('data-key');
+            let url = '';
+
+            if (type === 'status') {
+                const deliveryStatus = td.parentElement.getAttribute('data-delivery-status');
+                url = `/reports/planr/details/status?pop=${encodeURIComponent(pop)}`
+                    + `&deliveryStatus=${encodeURIComponent(deliveryStatus)}`
+                    + `&anschlussstatus=${encodeURIComponent(key)}`;
+            } else {
+                url = `/reports/planr/details/grundna?pop=${encodeURIComponent(pop)}`
+                    + `&grundna=${encodeURIComponent(key)}`;
+            }
+
+            const modalEl = document.getElementById('detailModal');
+            const modal   = new bootstrap.Modal(modalEl);
+            document.getElementById('detailContent').innerHTML =
+                '<tr><td colspan="2" class="text-center">Cargando…</td></tr>';
+            modal.show();
+
+            try {
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error(resp.statusText);
+                const data = await resp.json();
+
+                let rows = '';
+                if (data.length === 0) {
+                    rows = '<tr><td colspan="2" class="text-center">No hay datos</td></tr>';
+                } else {
+                    data.forEach(item => {
+                        rows += `<tr>
+                                <td>${item.dp ?? ''}</td>
+                                <td>${item.count ?? ''}</td>
+                             </tr>`;
+                    });
+                }
+                document.getElementById('detailContent').innerHTML = rows;
+            } catch (e) {
+                document.getElementById('detailContent').innerHTML =
+                    '<tr><td colspan="2" class="text-center text-danger">Error cargando detalles.</td></tr>';
+            }
+        }));
+    });
+    /*]]>*/
+</script>
+</body>
+</html>

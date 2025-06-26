@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>AppFibra - Tabla de Contratos</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Estilo personalizado -->
+  <link href="/static/css/style.css" rel="stylesheet"> <!-- tu propio CSS aquí si quieres -->
+
+</head>
+<body>
+
+<!-- ========== NAVBAR ========== -->
+<nav class="navbar navbar-expand-lg navbar-react fixed-top">
+  <div class="container-fluid">
+    <a class="navbar-brand-react navbar-brand" href="/contracts">
+      <i class="bi bi-fiber_manual-record me-2"></i> AppFibra
+    </a>
+    <ul class="navbar-nav ms-auto">
+      <li class="nav-item dropdown">
+        <a class="nav-link-react nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+          <i class="bi bi-person-circle me-1"></i> Usuario
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="#">Perfil</a></li>
+          <li><a class="dropdown-item" href="#">Configuración</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item text-danger" href="#">Cerrar Sesión</a></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<div class="d-flex" id="wrapper">
+  <!-- ========== SIDEBAR ========== -->
+  <div id="sidebar-wrapper" class="bg-light border-end">
+    <div class="sidebar-heading py-4 px-3 border-bottom d-flex align-items-center">
+      <i class="bi bi-fiber_manual-record text-primary fs-4 me-2"></i> <span class="fw-bold fs-5">AppFibra</span>
+    </div>
+    <div class="list-group list-group-flush" id="sidebarMenu">
+      <a href="/contracts" class="list-group-item list-group-item-action d-flex align-items-center">
+        <i class="bi bi-house-door me-2"></i> Inicio
+      </a>
+      <a href="/dashboard" class="list-group-item list-group-item-action d-flex align-items-center">
+        <i class="bi bi-speedometer2 me-2"></i> Dashboard
+      </a>
+      <a href="/analytics" class="list-group-item list-group-item-action d-flex align-items-center">
+        <i class="bi bi-bar-chart-line me-2"></i> Analíticas
+      </a>
+      <a href="/tablecontracts" class="list-group-item list-group-item-action active d-flex align-items-center">
+        <i class="bi bi-file-earmark-text me-2"></i> Contratos
+      </a>
+    </div>
+  </div>
+
+  <!-- ========== PAGE CONTENT ========== -->
+  <div id="page-content-wrapper" class="p-4">
+    <div class="container-fluid">
+      
+      <!-- ========== VISTAS NAVPILLS ========== -->
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <ul class="nav nav-pills" id="viewSelectorNav">
+          <li class="nav-item">
+            <a class="nav-link active" data-view="contracts_list" href="#">Contracts List</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-view="planner" href="#">Planner</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-view="unit_task" href="#">Unit Task</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-view="buildings_task" href="#">Buildings Task</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-view="buildings_status_extended" href="#">Buildings Status Extended</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-view="baulist_highlights" href="#">Baulist Highlights</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-view="patchlist_highlights" href="#">Patchlist Highlights</a>
+          </li>
+        </ul>
+
+        <div>
+          <button class="btn btn-sm btn-outline-primary me-2" id="btnExportExcel">Exportar Excel</button>
+          <button class="btn btn-sm btn-outline-danger" id="btnExportPDF">Exportar PDF</button>
+        </div>
+      </div>
+
+      <!-- ========== TABLA CONTRATOS ========== -->
+      <div class="card shadow-sm">
+        <div class="table-responsive">
+          <table class="table table-hover table-sm align-middle mb-0" id="contractsTable">
+            <thead id="tableHead"></thead>
+            <tbody id="contractsTableBody"></tbody>
+          </table>
+        </div>
+        <div class="d-flex justify-content-between p-3">
+          <div>
+            <button class="btn btn-secondary btn-sm" id="prevPageBtn">← Anterior</button>
+            <button class="btn btn-secondary btn-sm" id="nextPageBtn">Siguiente →</button>
+          </div>
+          <div id="paginationInfo" class="small text-muted"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- SCRIPTS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/static/js/tablecontracts.js"></script>
+</body>
+</html>

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <title>GeoServer Viewer – Interactive</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #map { height: 100%; }
+    
+    .navbar-custom {
+      box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+      z-index: 1000;
+    }
+    
+    .layer-panel {
+      position: fixed;
+      top: 70px;
+      right: 20px;
+      width: 320px;
+      max-height: calc(100vh - 100px);
+      overflow-y: auto;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      padding: 1rem;
+      display: none;
+    }
+    .classification-field {
+	  font-size: 0.875rem;
+	  padding: 0.25rem 0.5rem;
+	}
+    
+    .layer-card {
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: none;
+      margin-bottom: 0.75rem;
+    }
+    
+    .layer-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .card-header {
+      background: rgba(var(--bs-primary-rgb), 0.1);
+      border-bottom: none;
+      font-weight: 500;
+    }
+    
+    .form-range::-webkit-slider-thumb {
+      background: var(--bs-primary);
+    }
+    
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      z-index: 2000;
+      display: none;
+      place-items: center;
+    }
+    
+    @media (max-width: 768px) {
+      .layer-panel {
+        width: 90%;
+        right: 5%;
+        top: 60px;
+      }
+      
+      .navbar .form-select {
+        margin-bottom: 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body class="d-flex flex-column">
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-custom bg-white">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold text-primary" href="#">
+        <i class="fas fa-map me-2"></i>GeoViewer
+      </a>
+      <div class="d-flex align-items-center gap-2">
+        <button id="themeToggle" class="btn btn-sm btn-outline-secondary">
+          <i class="fas fa-moon"></i>
+        </button>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#controls">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      </div>
+      
+      <div class="collapse navbar-collapse" id="controls">
+        <div class="d-flex flex-column flex-lg-row gap-3 w-100">
+          <div class="flex-grow-1">
+            <label class="form-label small text-muted mb-1">Cliente</label>
+            <select id="clientSelector" class="form-select"></select>
+          </div>
+          <div class="flex-grow-1">
+            <label class="form-label small text-muted mb-1">Proyecto</label>
+            <select id="projectSelector" class="form-select"></select>
+          </div>
+          <div class="flex-grow-1">
+            <label class="form-label small text-muted mb-1">Village</label>
+            <select id="villageSelector" class="form-select"></select>
+          </div>
+          <div class="d-flex align-items-end">
+            <button id="loadLayerBtn" class="btn btn-primary w-100">
+              <span class="load-text">Cargar capas</span>
+              <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Map -->
+  <div id="map"></div>
+
+  <!-- Layer Panel -->
+  <div class="layer-panel" id="layerPanel">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="m-0">Capas activas</h5>
+      <button class="btn btn-sm btn-outline-secondary" onclick="toggleLayerPanel()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div id="layerCards"></div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay">
+    <div class="text-center">
+      <div class="spinner-border text-primary"></div>
+      <p class="mt-2 text-muted">Cargando capas...</p>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script>
+  // Inicializar mapa
+  const map = L.map('map').setView([48.2082,16.3738], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  let overlayControl, currentOverlays = {};
+
+  // Función para obtener campos de una capa
+  async function getLayerFields(layerName) {
+    try {
+      const response = await fetch(`/api/geoserver/fields?layer=${encodeURIComponent(layerName)}`);
+      return await response.json();
+    } catch (error) {
+      console.error('Error obteniendo campos:', error);
+      return [];
+    }
+  }
+
+  // BBOX helper
+  async function fetchLayerBounds(layerName) {
+    const url = `/api/geoserver/capabilities?layer=${encodeURIComponent(layerName)}`;
+    try {
+      const res = await fetch(url);
+      const xml = await res.text();
+      const doc = new DOMParser().parseFromString(xml, 'application/xml');
+      const g = doc.querySelector('Capability > Layer > LatLonBoundingBox');
+      if (g) return [
+        [parseFloat(g.getAttribute('miny')), parseFloat(g.getAttribute('minx'))],
+        [parseFloat(g.getAttribute('maxy')), parseFloat(g.getAttribute('maxx'))]
+      ];
+      const nameToMatch = layerName.split(':')[1].toLowerCase();
+      for (let l of doc.getElementsByTagName('Layer')) {
+    	  const nameNode = l.getElementsByTagName('Name')[0];
+    	  if (!nameNode) continue;
+    	  const n = nameNode.textContent.toLowerCase();
+    	  console.log('Comparando', n, 'con', nameToMatch);
+    	  if (n === nameToMatch) {
+    	    const b = l.getElementsByTagName('LatLonBoundingBox')[0];
+    	    return [
+    	      [parseFloat(b.getAttribute('miny')), parseFloat(b.getAttribute('minx'))],
+    	      [parseFloat(b.getAttribute('maxy')), parseFloat(b.getAttribute('maxx'))]
+    	    ];
+    	  }
+    	}
+        console.warn('No se encontró BBOX para la capa:', layerName);
+    } catch (e) {
+      console.error('Error BBOX:', e);
+    }
+    return null;
+  }
+
+  // Generar card con selector de clasificación
+  function makeCard(id, label, fields = []) {
+    return `
+      <div class="card layer-card" id="card-${id}">
+        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-layer-group text-primary"></i>
+            <span class="fw-medium">${label}</span>
+          </div>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" 
+                   data-layer="${id}" checked>
+          </div>
+        </div>
+        <div class="card-body py-2">
+          <div class="mb-3">
+            <label class="small text-muted mb-1 d-block">Clasificar por</label>
+            <select class="form-select form-select-sm classification-field" 
+                    data-layer="${id}"
+                    ${fields.length === 0 ? 'disabled' : ''}>
+              <option value="">Sin clasificación</option>
+              ${fields.map(f => `<option value="${f}">${f}</option>`).join('')}
+            </select>
+            ${fields.length === 0 ? `<small class="text-muted">No hay campos disponibles</small>` : ''}
+          </div>
+          <div class="form-check form-switch mt-1">
+          <input class="form-check-input toggle-fill-checkbox" type="checkbox"
+                 data-layer="${id}" checked>
+          <label class="small text-muted">Sin fondo</label>
+        </div>
+
+          <label class="small text-muted mb-1 d-block">Opacidad</label>
+          <input type="range" class="form-range opacity-slider" 
+                 data-layer="${id}" min="0" max="1" step="0.1" value="1">
+        </div>
+      </div>`;
+  }
+
+  // Actualizar estilo de capa
+  function updateLayerStyle(layerName, classificationField) {
+    const layer = currentOverlays[layerName];
+    const params = {
+      ...layer.wmsParams,
+      styles: classificationField ? 'color_by_attribute' : '',
+      cql_filter: classificationField ?
+        `INCLUDE;STYLE('color_by_attribute_${classificationField}')` : ''
+    };
+    const newLayer = L.tileLayer.wms(layer._url, params);
+    if (map.hasLayer(layer)) {
+      map.removeLayer(layer);
+      map.addLayer(newLayer);
+    }
+    currentOverlays[layerName] = newLayer;
+  }
+
+  // Carga de capas (refactorizada)
+  async function loadLayers() {
+  const loadBtn = document.getElementById('loadLayerBtn');
+  const overlay = document.querySelector('.loading-overlay');
+  try {
+    loadBtn.disabled = true;
+    loadBtn.querySelector('.load-text').classList.add('d-none');
+    loadBtn.querySelector('.spinner-border').classList.remove('d-none');
+    overlay.style.display = 'grid';
+
+    // Limpia capas anteriores
+    Object.values(currentOverlays).forEach(l => map.removeLayer(l));
+    currentOverlays = {};
+    document.getElementById('layerCards').innerHTML = '';
+
+    // Obtener selección actual
+    const ws = document.getElementById('clientSelector').value;
+    const v = document.getElementById('villageSelector').value;
+    if (!v) return alert('Selecciona un village');
+
+    // 🔎 Obtener la jerarquía del backend (si no la tienes en cache)
+    const res = await fetch('/api/geoserver/hierarchy');
+    const hierarchy = await res.json();
+
+    // 🔎 Buscar el objeto VillageLayer seleccionado
+    let civilLayerName = null;
+    let villageLayer = null;
+
+    hierarchy.forEach(client => {
+      if (client.client !== ws) return;
+      client.projects.forEach(project => {
+        project.villages.forEach(village => {
+          if (village.village === v) {
+            villageLayer = village;
+            // Encuentra la capa que termina con _cw
+            civilLayerName = village.layerNames.find(name => name.toLowerCase().includes('_cw'));
+          }
+        });
+      });
+    });
+
+    if (!villageLayer) {
+      alert('No se encontró el village seleccionado en la jerarquía.');
+      return;
+    }
+
+    // 🔎 Cargar las capas reales del village
+    const layersPromises = villageLayer.layerNames.map(async layerName => {
+      try {
+        const fields = await getLayerFields(layerName);
+        const workspace = layerName.split(':')[0];
+
+        const layer = L.tileLayer.wms(`http://localhost:8080/geoserver/${workspace}/wms`, {
+          layers: layerName,
+          format: 'image/png',
+          transparent: true,
+          version: '1.1.1',
+          styles: ''
+        }).addTo(map);
+
+        currentOverlays[layerName] = layer;
+
+        // Añadir la tarjeta de control de la capa
+        const label = layerName.split(':')[1];
+        document.getElementById('layerCards').insertAdjacentHTML(
+          'beforeend', makeCard(layerName, label, fields)
+        );
+      } catch (error) {
+        console.error(`Error cargando capa ${layerName}:`, error);
+      }
+    });
+
+    await Promise.all(layersPromises);
+
+    // 🔎 Centrar el mapa en el BBOX de la capa de civil works
+    if (civilLayerName) {
+	  const b = await fetchLayerBounds(civilLayerName);
+	  if (b) {
+	    // Centra con un poco más de zoom y padding
+	    map.fitBounds(b, {
+	      padding: [20, 20], // margen en píxeles
+	      maxZoom: 17
+	    });
+	  } else {
+	    console.warn('No se pudo obtener el BBOX de', civilLayerName);
+	  }
+	} else {
+	  console.warn('No se encontró capa de obra civil (_cw) en', v);
+	}
+
+    // Actualizar control de capas
+    overlayControl && map.removeControl(overlayControl);
+    overlayControl = L.control.layers(
+      null,
+      Object.fromEntries(Object.entries(currentOverlays)),
+      { collapsed: false }
+    ).addTo(map);
+
+    // Mostrar panel de capas
+    document.getElementById('layerPanel').style.display = 'block';
+  } catch (error) {
+    console.error('Error general:', error);
+    alert('Error cargando capas');
+  } finally {
+    loadBtn.disabled = false;
+    loadBtn.querySelector('.load-text').classList.remove('d-none');
+    loadBtn.querySelector('.spinner-border').classList.add('d-none');
+    overlay.style.display = 'none';
+  }
+}
+
+
+  // Eventos de interfaz
+  document.getElementById('loadLayerBtn').addEventListener('click', loadLayers);
+	document.getElementById('villageSelector').addEventListener('change', loadLayers);
+	
+	document.getElementById('layerCards').addEventListener('input', e => {
+	  if (e.target.matches('.opacity-slider')) {
+	    const l = e.target.dataset.layer;
+	    currentOverlays[l].setOpacity(e.target.value);
+	  }
+	});
+	
+	document.getElementById('layerCards').addEventListener('change', e => {
+	  if (e.target.matches('.form-check-input')) {
+	    const l = e.target.dataset.layer;
+	    const card = document.getElementById(`card-${l}`);
+	    card.style.opacity = e.target.checked ? 1 : 0.5;
+	    if (e.target.checked) map.addLayer(currentOverlays[l]);
+	    else map.removeLayer(currentOverlays[l]);
+	  }
+	
+	  if (e.target.matches('.classification-field')) {
+	    const layer = e.target.dataset.layer;
+	    const field = e.target.value;
+	    updateLayerStyle(layer, field);
+	  }
+	
+	  // 🔥 NUEVO: toggle para quitar fondo en la capa catastro
+	  if (e.target.matches('.toggle-fill-checkbox')) {
+	    const layerName = e.target.dataset.layer;
+	    const newStyle = e.target.checked ? 'catastro_style' : 'catastro_style_full';
+	
+	    const oldLayer = currentOverlays[layerName];
+	    const workspace = layerName.split(':')[0];
+	
+	    // crear nueva capa con el nuevo estilo
+	    const newLayer = L.tileLayer.wms(`http://localhost:8080/geoserver/${workspace}/wms`, {
+	      layers: layerName,
+	      format: 'image/png',
+	      transparent: true,
+	      version: '1.1.1',
+	      styles: newStyle
+	    }).addTo(map);
+	
+	    // sustituir la capa en el mapa
+	    map.removeLayer(oldLayer);
+	    currentOverlays[layerName] = newLayer;
+	  }
+	});
+	
+	function toggleLayerPanel() {
+	  const panel = document.getElementById('layerPanel');
+	  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+	}
+  function toggleLayerPanel() {
+    const panel = document.getElementById('layerPanel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  }
+
+  // Inicialización de jerarquía
+  fetch('/api/geoserver/hierarchy')
+    .then(r => r.json())
+    .then(data => {
+      const cs = document.getElementById('clientSelector');
+      const ps = document.getElementById('projectSelector');
+      const vs = document.getElementById('villageSelector');
+
+      data.forEach(c => cs.add(new Option(c.client, c.client)));
+      cs.onchange = () => {
+        ps.innerHTML = '';
+        vs.innerHTML = '';
+        const c = data.find(x => x.client === cs.value);
+        c.projects.forEach(p => ps.add(new Option(p.project, p.project)));
+        ps.onchange();
+      };
+      ps.onchange = () => {
+    	  vs.innerHTML = '';
+    	  const c = data.find(x => x.client === cs.value);
+    	  const p = c.projects.find(x => x.project === ps.value);
+
+    	  p.villages.forEach(villageObj => {
+    	    const villageName = villageObj.village;
+    	    vs.add(new Option(villageName, villageName));
+    	  });
+    	};
+
+      cs.onchange();
+    }).catch(console.error);
+
+  // Control de tema
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    const theme = document.documentElement.getAttribute('data-bs-theme');
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-bs-theme', newTheme);
+    document.getElementById('themeToggle').innerHTML =
+      newTheme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+  });
+</script>
+  
+</body>
+</html>

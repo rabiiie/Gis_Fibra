@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GIS Dashboard Profesional</title>
+
+  <!-- Librerías externas -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-measure@2.3.0/dist/leaflet-measure.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.13.0/dist/leaflet-geoman.css" />
+  <!-- Leaflet MarkerCluster -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+  
+  
+
+  <!-- Estilos personalizados -->
+  <link rel="stylesheet" href="/css/Clients.css" />
+</head>
+<body>
+  <div class="gis-container">
+    <!-- Barra superior -->
+    <div class="gis-toolbar">
+      <div class="gis-toolbar-title">
+        <div class="gis-logo">GIS</div>
+        <h1>GIS Insyte</h1>
+      </div>
+
+      <div class="gis-controls">
+        <div class="search-container">
+          <i class="bi bi-search"></i>
+          <input type="text" id="searchClient" placeholder="Buscar cliente..." />
+        </div>
+
+        <div class="gis-buttons">
+          <button class="gis-btn" onclick="reloadClients()">
+            <i class="bi bi-arrow-repeat"></i> Recargar
+          </button>
+          <button class="gis-btn gis-btn-primary" id="togglePanelBtn">
+            <i class="bi bi-list"></i> Clientes
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Área del mapa -->
+    <div class="gis-map-area">
+    <div id="mapLegend" class="gis-map-legend"></div>
+      <div id="map"></div>
+      
+      <div class="draw-tools-panel" id="drawToolsPanel">
+		  <button onclick="startDraw('polyline')"><i class="bi bi-vector-pen"></i> Línea</button>
+		  <button onclick="startDraw('polygon')"><i class="bi bi-hexagon"></i> Polígono</button>
+		  <button onclick="startDraw('rectangle')"><i class="bi bi-aspect-ratio"></i> Rectángulo</button>
+		  <button onclick="startDraw('marker')"><i class="bi bi-geo-alt"></i> Punto</button>
+		</div>
+      
+
+      <!-- Botón flotante de capas -->
+      <div class="floating-layer-btn" id="layersMenuBtn">
+        <i class="bi bi-layers"></i>
+      </div>
+
+      <!-- Panel lateral de clientes y proyectos -->
+      <div class="gis-side-panel" id="sidePanel">
+        <div class="panel-header">
+          <h2>Lista de Clientes</h2>
+          <button class="close-panel" id="closePanelBtn">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <div class="clients-list" id="clientsContainer">
+          <!-- Clientes cargados dinámicamente -->
+        </div>
+
+        <div class="projects-section" id="projectsSection">
+          <h3>Proyectos del cliente</h3>
+          <div class="project-grid" id="clientProjectsContainer">
+            <!-- Proyectos cargados dinámicamente -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel de gestión de capas -->
+	<div class="gis-layer-panel hidden" id="layerPanel">
+	  <div class="panel-header">
+	    <h2>Gestión de capas</h2>
+	    <button class="close-panel" id="closeLayerPanelBtn">
+	      <i class="bi bi-x-lg"></i>
+	    </button>
+	  </div>
+	
+	  <!-- Scroll interno -->
+	  <div class="layer-controls p-3">
+	    <div class="mb-3">
+	      <label for="layerFilterTarget">Capa:</label>
+	      <select id="layerFilterTarget" class="form-select">
+	        <option value="civil-works">Civil Works</option>
+	        <option value="buildings">Buildings</option>
+	      </select>
+	    </div>
+	
+	    <div class="mb-3">
+	      <label for="groupBySelect">Clasificar por:</label>
+	      <select id="groupBySelect" class="form-select">
+	        <option value="village_pop">Village-PoP</option>
+	        <option value="type">Type</option>
+	        <option value="spec">Spec</option>
+	        <option value="dp_name">DPs</option>
+	        <option value="street_name">Streets</option>
+	      </select>
+	    </div>
+	
+	    <!-- Secciones plegables -->
+	    <div class="filter-group mb-2">
+	      <div class="filter-header" onclick="LayersModule.toggleFilterSection('type')">
+	        <h6>
+	          TYPE 
+	          <span id="count_type" class="filter-count">0</span>
+	          <i class="bi bi-chevron-down"></i>
+	        </h6>
+	      </div>
+	      <div id="filterControls_type" class="filter-content filter-container collapsed"></div>
+	    </div>
+	
+	    <div class="filter-group mb-2">
+	      <div class="filter-header" onclick="LayersModule.toggleFilterSection('village_pop')">
+	        <h6>
+	          VILLAGE_POP 
+	          <span id="count_village_pop" class="filter-count">0</span>
+	          <i class="bi bi-chevron-down"></i>
+	        </h6>
+	      </div>
+	      <div id="filterControls_village_pop" class="filter-content filter-container collapsed"></div>
+	    </div>
+	
+	    <div class="filter-group mb-2">
+	      <div class="filter-header" onclick="LayersModule.toggleFilterSection('spec')">
+	        <h6>
+	          SPEC 
+	          <span id="count_spec" class="filter-count">0</span>
+	          <i class="bi bi-chevron-down"></i>
+	        </h6>
+	      </div>
+	      <div id="filterControls_spec" class="filter-content filter-container collapsed"></div>
+	    </div>
+	    <div class="filter-group mb-2">
+		  <div class="filter-header" onclick="LayersModule.toggleFilterSection('dp_name')">
+		    <h6>DP <span id="count_dp_name" class="filter-count">0</span> <i class="bi bi-chevron-down"></i></h6>
+		  </div>
+		  <div id="filterControls_dp_name" class="filter-content filter-container collapsed"></div>
+		</div>
+		
+		<div class="filter-group mb-2">
+		  <div class="filter-header" onclick="LayersModule.toggleFilterSection('building_status')">
+		    <h6>Building Status <span id="count_building_status" class="filter-count">0</span> <i class="bi bi-chevron-down"></i></h6>
+		  </div>
+		  <div id="filterControls_building_status" class="filter-content filter-container collapsed"></div>
+		</div>
+		
+		<div class="filter-group mb-2">
+		  <div class="filter-header" onclick="LayersModule.toggleFilterSection('has_class')">
+		    <h6>HAS <span id="count_has_class" class="filter-count">0</span> <i class="bi bi-chevron-down"></i></h6>
+		  </div>
+		  <div id="filterControls_has_class" class="filter-content filter-container collapsed"></div>
+		</div>
+		<div class="filter-group mb-2">
+		    <div class="filter-header" onclick="LayersModule.toggleFilterSection('street_name')">
+                <h6>Street Name <span id="count_street_name" class="filter-count">0</span> <i class="bi bi-chevron-down"></i></h6>    
+		  </div>
+		  <div id="filterControls_street_name" class="filter-content filter-container collapsed"></div>
+		  </div>
+	
+	  <!-- Botón fijo al fondo -->
+	  <div class="filter-footer">
+	    <button id="applyFiltersBtn" class="gis-btn gis-btn-primary w-100">
+	      <i class="bi bi-funnel"></i> Aplicar Filtros
+	    </button>
+	  </div>
+	</div>
+	      
+
+      <!-- Botón para mostrar/ocultar panel de clientes -->
+      <div class="toggle-panel" id="togglePanelIcon">
+        <i class="bi bi-list"></i>
+      </div>
+    </div>
+  </div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4leaflet/1.0.2/proj4leaflet.min.js"></script>
+<script>
+  proj4.defs("EPSG:25832", "+proj=utm +zone=32 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
+</script>
+<script src="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet-measure@2.3.0/dist/leaflet-measure.min.js"></script>
+<script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.13.0/dist/leaflet-geoman.min.js"></script>
+<script src="https://unpkg.com/leaflet-geometryutil"></script>
+<script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  
+  
+  
+  
+  
+  
+  
+
+  <!-- JS personalizados -->
+  <script src="/js/gis-dashboard.js"></script>
+  <script src="/js/clients.js"></script>
+  <script src="/js/projects.js"></script>
+  <script src="/js/layers.js"></script>
+</body>
+</html>

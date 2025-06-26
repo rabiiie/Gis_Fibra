@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Prueba Capas GIS</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <!-- Bootstrap Icons para el icono -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+
+  <style>
+    body, html { margin:0; padding:0; height:100%; }
+    #map { height: 100%; width:100%; }
+
+    /* Botón flotante */
+    .floating-layer-btn {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: #2a2a3b;
+      color: #fff;
+      width: 44px; height:44px;
+      border-radius: 50%;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; z-index:1001;
+      box-shadow:0 2px 6px rgba(0,0,0,0.4);
+      transition:background 0.3s;
+    }
+    .floating-layer-btn:hover { background: #3c3c52; }
+
+    /* Panel de capas */
+    .hidden { display:none; }
+    #layerPanel {
+      position:absolute;
+      top:80px; left:20px;
+      background:#2a2a3b; color:#fff;
+      padding:15px; border-radius:8px;
+      width:260px; z-index:1001;
+      box-shadow:0 2px 8px rgba(0,0,0,0.5);
+    }
+    #layerPanel label, #layerPanel select, #layerPanel button {
+      display:block; margin-bottom:10px; width:100%;
+    }
+    #layerPanel button {
+      background:#4dabf5; border:none; color:#fff;
+      padding:8px; border-radius:4px; cursor:pointer;
+    }
+    #layerPanel button:hover { background:#3b8ac4; }
+  </style>
+</head>
+<body>
+
+  <div id="map"></div>
+
+  <!-- Botón flotante -->
+  <div class="floating-layer-btn" id="layersMenuBtn">
+    <i class="bi bi-layers"></i>
+  </div>
+
+  <!-- Panel de capas -->
+  <div id="layerPanel" class="hidden">
+    <label>
+      <input type="checkbox" id="toggleCivil" checked />
+      Civil Works
+    </label>
+    <label for="groupBySelect">Clasificar por:</label>
+    <select id="groupBySelect">
+      <option value="spec">Spec</option>
+      <option value="type">Type</option>
+      <option value="village">Village</option>
+    </select>
+    <button id="loadCivil">Cargar Civil Works</button>
+    <button id="applyStyle">Aplicar Estilo</button>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // 1) Inicializar mapa
+    const map = L.map('map').setView([40.4168, -3.7038], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:'&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // 2) Variables de capa
+    let civilLayer = null;
+
+    // 3) Mostrar/ocultar panel
+    document.getElementById('layersMenuBtn').addEventListener('click', () => {
+      document.getElementById('layerPanel').classList.toggle('hidden');
+    });
+
+    // 4) Cerrar panel al aplicar o recargar
+    // (opcional pero recomendable)
+    document.getElementById('applyStyle').addEventListener('click', () => {
+      document.getElementById('layerPanel').classList.add('hidden');
+      applyLayerStyle();
+    });
+
+    // 5) Cargar GeoJSON cuando se pulsa "Cargar Civil Works"
+    document.getElementById('loadCivil').addEventListener('click', () => {
+      const popId = 1; // Ajusta según tu PoP real
+      loadCivilWorksLayer(popId);
+    });
+
+    // 6) Toggle visibilidad checkbox
+    document.getElementById('toggleCivil').addEventListener('change', (e) => {
+      if (civilLayer) {
+        e.target.checked ? map.addLayer(civilLayer) : map.removeLayer(civilLayer);
+      }
+    });
+
+    // Función para cargar la capa
+    function loadCivilWorksLayer(popId) {
+      const params = new URLSearchParams({ popId });
+      fetch(`/api/civil-works/geojson?${params}`)
+        .then(r => r.json())
+        .then(data => {
+          const geo = JSON.parse(data.geojson);
+          if (civilLayer) map.removeLayer(civilLayer);
+          civilLayer = L.geoJSON(geo, { style: defaultStyle }).addTo(map);
+          map.fitBounds(civilLayer.getBounds());
+        })
+        .catch(console.error);
+    }
+
+    // Estilo por defecto antes de clasificar
+    function defaultStyle(feature) {
+      return { color:'#FF5733', weight:3 };
+    }
+
+    // Aplicar estilo según campo
+    function applyLayerStyle() {
+      if (!civilLayer) return;
+      const field = document.getElementById('groupBySelect').value;
+      const colorMap = {};
+      let idx = 0;
+      const palette = ['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b'];
+      civilLayer.eachLayer(l => {
+        const key = l.feature.properties[field] || 'Otro';
+        if (!colorMap[key]) colorMap[key] = palette[idx++ % palette.length];
+        l.setStyle({ color: colorMap[key], weight:3 });
+      });
+    }
+  </script>
+</body>
+</html>
