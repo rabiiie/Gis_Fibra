@@ -43,7 +43,7 @@ public class BuildingsService {
     		                    'home_id',              vs.home_id,
     		                    'anschlussstatus',      vs.anschlussstatus_contracts,
     		                    'aufgabenstatus',       vs.aufgabenstatus,
-    		                    'hausbegehung_status',  vs.building_hausbegehung_status,
+    		                    'building_status',      vs.building_status,
     		                    'has_class',            vs.has_class,
     		                    'phassive',             vs.pha
     		                )

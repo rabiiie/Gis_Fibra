@@ -220,37 +220,48 @@ const GISAdvanced = (function() {
         getMap: function() {
             return map;
         },
-        toggleLayerPanel: function() {
-            const layerPanel = document.getElementById('layerPanel');
-            if (layerPanel) {
-                layerPanel.classList.toggle('hidden');
-            }
+		toggleLayerPanel: function() {
+		    const layerPanel = document.getElementById('layerPanel');
+		    if (layerPanel) {
+		        const isNowVisible = !layerPanel.classList.contains('active');
+
+		        // ✅ Alternar visibilidad
+		        layerPanel.classList.toggle('active');
+
+		        // ✅ Añadir estado al historial solo si se está abriendo
+		        if (isNowVisible) {
+		            NavigationModule.goToLayerPanel();
+		        }
+		    }
+
         },
-        loadClientProjects: function(clientId) {
-            currentClientId = clientId;
-            const loadingOverlay = createLoadingOverlay();
-            const mapArea = document.querySelector('.gis-map-area');
-            if (!mapArea) return;
-            
-            mapArea.appendChild(loadingOverlay);
-            
-            fetch(`/api/clients/${clientId}/projects`)
-                .then(response => {
-                    if (!response.ok) throw new Error('Error al cargar proyectos');
-                    return response.json();
-                })
-                .then(projects => {
-                    if (window.ProjectsModule?.fillClientProjects) {
-                        ProjectsModule.fillClientProjects(projects);
-                    }
-                })
-                .catch(err => {
-                    console.error('Error cargando proyectos:', err);
-                    alert('Error al cargar proyectos: ' + err.message);
-                })
-                .finally(() => {
-                    loadingOverlay.remove();
-                });
+		loadClientProjects: function(clientId) {
+		    currentClientId = clientId;
+		    const loadingOverlay = createLoadingOverlay();
+		    const mapArea = document.querySelector('.gis-map-area');
+		    if (!mapArea) return;
+
+		    mapArea.appendChild(loadingOverlay);
+
+		    // ✅ Añadido return
+		    return fetch(`/api/clients/${clientId}/projects`)
+		        .then(response => {
+		            if (!response.ok) throw new Error('Error al cargar proyectos');
+		            return response.json();
+		        })
+		        .then(projects => {
+		            if (window.ProjectsModule?.fillClientProjects) {
+		                ProjectsModule.fillClientProjects(projects);
+		            }
+		            return projects; // ✅ opcionalmente devuelve los datos
+		        })
+		        .catch(err => {
+		            console.error('Error cargando proyectos:', err);
+		            alert('Error al cargar proyectos: ' + err.message);
+		        })
+		        .finally(() => {
+		            loadingOverlay.remove();
+		        });
         },
         reloadClients: function() {
             const loadingOverlay = createLoadingOverlay();
@@ -267,10 +278,11 @@ const GISAdvanced = (function() {
     };
 })();
 
+window.GISDashboard = GISAdvanced;
+
 // Inicialización al cargar el DOM
 document.addEventListener('DOMContentLoaded', () => {
-    GISAdvanced.init();
-    
     // Exportar al ámbito global si es necesario
-    window.GISDashboard = GISAdvanced;
+	GISAdvanced.init();
+	NavigationModule.init();
 });

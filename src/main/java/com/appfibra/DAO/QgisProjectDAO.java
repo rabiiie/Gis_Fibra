@@ -175,7 +175,8 @@ public class QgisProjectDAO {
 			                    'village_pop', c.village || '_' || p.name,
 			                    'tzip', c.tzip,
 			                    'geom_hash', c.geom_hash,
-			                    'parent_id', c.parent_id
+			                    'parent_id', c.parent_id,
+			                    'label', c.label
 			                )
 			            )
 			        ), '[]'::jsonb)

@@ -51,6 +51,9 @@
     <!-- Área del mapa -->
     <div class="gis-map-area">
     <div id="mapLegend" class="gis-map-legend"></div>
+    <div id="floatingCardsContainer" class="floating-cards-container">
+    <!-- Aquí se insertan dinámicamente los cards de clientes y proyectos -->
+  </div>
       <div id="map"></div>
       
       <div class="draw-tools-panel" id="drawToolsPanel">
@@ -66,27 +69,6 @@
         <i class="bi bi-layers"></i>
       </div>
 
-      <!-- Panel lateral de clientes y proyectos -->
-      <div class="gis-side-panel" id="sidePanel">
-        <div class="panel-header">
-          <h2>Lista de Clientes</h2>
-          <button class="close-panel" id="closePanelBtn">
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </div>
-
-        <div class="clients-list" id="clientsContainer">
-          <!-- Clientes cargados dinámicamente -->
-        </div>
-
-        <div class="projects-section" id="projectsSection">
-          <h3>Proyectos del cliente</h3>
-          <div class="project-grid" id="clientProjectsContainer">
-            <!-- Proyectos cargados dinámicamente -->
-          </div>
-        </div>
-      </div>
-
       <!-- Panel de gestión de capas -->
 	<div class="gis-layer-panel hidden" id="layerPanel">
 	  <div class="panel-header">
@@ -98,13 +80,17 @@
 	
 	  <!-- Scroll interno -->
 	  <div class="layer-controls p-3">
+	  <div id="layersListContainer" class="mb-3"></div>
 	    <div class="mb-3">
-	      <label for="layerFilterTarget">Capa:</label>
-	      <select id="layerFilterTarget" class="form-select">
-	        <option value="civil-works">Civil Works</option>
-	        <option value="buildings">Buildings</option>
-	      </select>
-	    </div>
+  <label for="layerFilterTarget" class="form-label">Capa:</label>
+  <div class="input-group input-group-sm">
+    <select id="layerFilterTarget" class="form-select">
+      <option value="civil-works">Civil Works</option>
+      <option value="buildings">Buildings</option>
+    </select>
+  </div>
+</div>
+	    
 	
 	    <div class="mb-3">
 	      <label for="groupBySelect">Clasificar por:</label>
@@ -192,6 +178,7 @@
       </div>
     </div>
   </div>
+  
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
@@ -215,10 +202,13 @@
   
   
 
-  <!-- JS personalizados -->
-  <script src="/js/gis-dashboard.js"></script>
-  <script src="/js/clients.js"></script>
-  <script src="/js/projects.js"></script>
-  <script src="/js/layers.js"></script>
+<script src="/js/gis/gis-dashboard.js"></script>
+<!-- Luego todos los módulos que dependen de él -->
+<script src="/js/gis/utils.js"></script>
+<script src="/js/gis/layers.js"></script>
+<script src="/js/gis/clients.js"></script>
+<script src="/js/gis/projects.js"></script>
+<script src="/js/gis/navigation.js"></script>
+  
 </body>
 </html>

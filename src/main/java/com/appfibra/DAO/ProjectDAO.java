@@ -88,5 +88,58 @@ public class ProjectDAO {
         List<Map<String, Object>> result = jdbcTemplate.queryForList(sql, projectId);
         return result.isEmpty() ? null : result.get(0);
     }
+    public List<Map<String, Object>> getProjectsByClientId(int clientId) {
+        String sql = """
+            SELECT
+                p.project_id,
+                p.name,
+                p.country,
+                p.phase,
+                p.subcontractor,
+                p.lat,
+                p.lng,
+
+                -- Total metros civil_works
+                COALESCE((
+                    SELECT SUM(cw.length_meters)
+                    FROM civil_works cw
+                    JOIN pops pop ON cw.pop_id = pop.pop_id
+                    WHERE pop.project_id = p.project_id
+                ), 0) AS total_civil_works,
+
+                -- Total hogares (homes)
+                COALESCE((
+                    SELECT COUNT(*)
+                    FROM homes h
+                    WHERE h.project_id = p.project_id
+                ), 0) AS total_hps,
+
+                -- Total contratos activos
+                COALESCE((
+                    SELECT COUNT(*)
+                    FROM contracts_list cl
+                    WHERE cl.project_code = p.project_id::text
+                ), 0) AS total_activations
+
+            FROM projects p
+            WHERE p.client_id = ?
+            ORDER BY p.project_id;
+        """;
+
+        return jdbcTemplate.queryForList(sql, clientId);
+    }
+    public List<Map<String, Object>> getProjectsWithoutCoordinates() {
+        String sql = "SELECT project_id, name FROM projects WHERE lat IS NULL OR lng IS NULL";
+        return jdbcTemplate.queryForList(sql);
+    }
+
+    public int updateCoordinatesById(Long id, double lat, double lng) {
+        String sql = "UPDATE projects SET lat = ?, lng = ? WHERE project_id = ?";
+        return jdbcTemplate.update(sql, lat, lng, id);
+    }
+
+
+
+
 
 }

@@ -64,18 +64,40 @@ public class ClientDAO {
      */
     public List<Map<String, Object>> getProjectsByClient(Long clientId) {
         String sql = """
-            SELECT 
-              p.project_id    AS id,
-              p.name          AS name,
-              p.country       AS country,
-              p.phase         AS phase,
-              p.subcontractor AS subcontractor
+            SELECT
+                p.project_id            AS id,
+                p.name                  AS name,
+                p.country               AS country,
+                p.phase                 AS phase,
+                p.subcontractor         AS subcontractor,
+                p.lat                   AS lat,
+                p.lng                   AS lng,
+
+                (SELECT COUNT(*) 
+                 FROM homes h 
+                 WHERE h.project_id = p.project_id) AS hp,
+
+                (SELECT COUNT(*) 
+                 FROM homes h 
+                 WHERE h.project_id = p.project_id) AS total_activations,
+
+                (SELECT COALESCE(SUM(cw.length_meters), 0) 
+                 FROM civil_works cw 
+                 JOIN pops pop ON cw.pop_id = pop.pop_id
+                 WHERE pop.project_id = p.project_id) AS civilworks,
+
+                (SELECT COUNT(*) 
+                 FROM contracts_list cl 
+                 WHERE TRIM(cl.projectcode) = TRIM(p.project_code)) AS total_contracts
+
             FROM projects p
             WHERE p.client_id = ?
             ORDER BY p.name
         """;
+
         return jdbcTemplate.queryForList(sql, clientId);
     }
+
 
     public Map<String, Object> getClientById(Long clientId) {
         String sql = "SELECT * FROM clients WHERE client_id = ?";

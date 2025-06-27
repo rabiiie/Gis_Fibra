@@ -123,7 +123,7 @@ public class ContractsDAO {
     // ---------------------------------------------------------
     public Set<String> getValidColumns(String viewName) {
         String realTable = switch (viewName.toLowerCase()) {
-            case "buildings_status_extended" -> "vw_buildings_status_extended";
+            case "buildings_status_extended" -> "addresslist";
             case "planner"                   -> "mastergrid";
             case "task_units"                -> "task_units";
             case "buildings_task"            -> "vw_buildings_task";
@@ -217,7 +217,7 @@ public class ContractsDAO {
          case "buildings_task"            -> { baseSql = "SELECT * FROM task_buildings";        orderCol = "building_id"; }
          case "baulist_highlights"        -> { baseSql = "SELECT * FROM baulist_highlights";    orderCol = "home_id, building_id"; }
          case "activations_highlights"    -> { baseSql = "SELECT * FROM activations_highlights";orderCol = "bestellnummer"; }
-         case "buildings_status_extended" -> { baseSql = "SELECT * FROM vw_buildings_status_extended"; orderCol = "home_id, building_id"; }
+         case "buildings_status_extended" -> { baseSql = "SELECT * FROM addresslist"; orderCol = "home_id, building_id"; }
          case "ar_web"                   -> { baseSql = "SELECT * FROM ar_web";                orderCol = "home_id"; }
          default -> throw new IllegalArgumentException("Vista no válida: " + viewName);
      }
@@ -286,7 +286,7 @@ public class ContractsDAO {
          case "planner"                   -> "SELECT COUNT(*) FROM mastergrid";
          case "task_units"                -> "SELECT COUNT(*) FROM task_units";
          case "buildings_task"            -> "SELECT COUNT(*) FROM task_buildings";
-         case "buildings_status_extended" -> "SELECT COUNT(*) FROM vw_buildings_status_extended";
+         case "buildings_status_extended" -> "SELECT COUNT(*) FROM addresslist";
          case "baulist_highlights"        -> "SELECT COUNT(*) FROM baulist_highlights";
          case "activations_highlights"    -> "SELECT COUNT(*) FROM activations_highlights";
          case "ar_web"                   -> "SELECT COUNT(*) FROM ar_web";
@@ -343,13 +343,13 @@ public class ContractsDAO {
 		} else {
 		column = getColumnForField(viewName, field);
 		}
-		String realView = "vw_buildings_status_extended";
+		String realView = "addresslist";
 		
 		StringBuilder sql = new StringBuilder(field.equalsIgnoreCase("anschlussstatus_contracts")
 		? """
 		SELECT TRIM(unnest(string_to_array(anschlussstatus_contracts, ','))) AS key,
 		COUNT(*) AS value
-		FROM vw_buildings_status_extended
+		FROM addresslist
 		"""
 		: "SELECT " + column + " AS key, COUNT(*) AS value FROM " + realView);
 		
@@ -403,7 +403,7 @@ public class ContractsDAO {
                 "LEFT JOIN task_units u     ON b.assignment_number = u.building_id " +
                 "LEFT JOIN mastergrid m     ON m.Auftragsnummer   = u.assignment_number " +
                 "LEFT JOIN outsources o     ON LOWER(c.access_location) = LOWER(o.AP)";
-            case "buildings_status_extended" -> "vw_buildings_status_extended";
+            case "buildings_status_extended" -> "addresslist";
             case "baulist_highlights" -> "baulist_highlights";
             case "planner" -> "mastergrid";
             
@@ -498,7 +498,7 @@ public class ContractsDAO {
 				SUM(has0_count) AS has0,
 				SUM(has1_count) AS has1,
 				SUM(has2_count) AS has2
-				FROM vw_buildings_status_extended
+				FROM addresslist
 				""", column));
 				
 				SqlFilterBuilder builder = new SqlFilterBuilder();
@@ -527,10 +527,10 @@ public class ContractsDAO {
 				return jdbcTemplate.queryForList(sql.toString(), builder.getParams().toArray());
 				}
     // ---------------------------------------------------------
-    // 6. Queries extendidas (vw_buildings_status_extended)
+    // 6. Queries extendidas (addresslist)
     // ---------------------------------------------------------
     public List<Map<String, Object>> getExtendedContractsReport(Map<String, String> filters, int offset, int limit) {
-        String baseSql = "SELECT * FROM vw_buildings_status_extended";
+        String baseSql = "SELECT * FROM addresslist";
 
         SqlFilterBuilder builder = new SqlFilterBuilder();
         builder.addTextFilter("building_id",               filters.get("building_id"));
@@ -565,7 +565,7 @@ public class ContractsDAO {
     }
 
     public int countExtendedContracts(Map<String, String> filters) {
-        String baseSql = "SELECT COUNT(*) FROM vw_buildings_status_extended";
+        String baseSql = "SELECT COUNT(*) FROM addresslist";
 
         SqlFilterBuilder builder = new SqlFilterBuilder();
         builder.addTextFilter("building_id",               filters.get("building_id"));

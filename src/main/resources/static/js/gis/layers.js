@@ -33,6 +33,7 @@ LayersModule = (function() {
         initEventListeners();
         initLayerControls();
 		initCatastroLayer();
+		updateInitialVisibilityStates();
         console.log("Módulo de capas inicializado");
     }
 
@@ -43,7 +44,7 @@ LayersModule = (function() {
         document.getElementById("closeLayerPanelBtn")?.addEventListener("click", toggleLayerPanel);
         document.getElementById("applyLayerStyleBtn")?.addEventListener("click", applyLayerStyle);
         document.getElementById("applyFiltersBtn")?.addEventListener("click", applyFilters);
-        
+
         
 		document.getElementById("layerFilterTarget")?.addEventListener('change', function() {
 		    const target = this.value;
@@ -73,10 +74,114 @@ LayersModule = (function() {
 		}
 
     // Inicializar controles de capa
-    function initLayerControls() {
-        // No necesitamos inicializar controles específicos aquí ahora
-        console.log("Controles de capa inicializados");
-    }
+	function initLayerControls() {
+	    const layersContainer = document.getElementById("layersListContainer");
+	    if (!layersContainer) return;
+
+	    layersContainer.innerHTML = `
+	        <div class="layers-panel">
+	            <div class="layers-header">CAPAS</div>
+	            
+	            <div class="layer-control">
+	                <button class="layer-btn active" data-layer="civil-works">
+	                    <i class="bi bi-eye-fill"></i>
+	                    <span class="layer-name">Obras Civiles</span>
+	                    <span class="layer-count">44</span>
+	                </button>
+	                
+	                <button class="layer-btn active" data-layer="buildings">
+	                    <i class="bi bi-eye-fill"></i>
+	                    <span class="layer-name">Edificios</span>
+	                    <span class="layer-count">27</span>
+	                </button>
+	                
+	                <button class="layer-btn" data-layer="catastro">
+	                    <i class="bi bi-eye-slash-fill"></i>
+	                    <span class="layer-name">Catastro</span>
+	                </button>
+	            </div>
+	        </div>
+	    `;
+
+	    // Event listeners
+	    document.querySelectorAll('.layer-btn').forEach(btn => {
+	        btn.addEventListener('click', function() {
+	            const layerType = this.dataset.layer;
+	            const isActive = this.classList.toggle('active');
+	            const icon = this.querySelector('i');
+	            
+	            // Alternar iconos de visibilidad
+	            icon.classList.toggle('bi-eye-fill', isActive);
+	            icon.classList.toggle('bi-eye-slash-fill', !isActive);
+	            
+	            // Cambiar visibilidad en el mapa
+	            toggleLayerVisibility(layerType);
+	        });
+	    });
+	}
+
+	// Nueva función para alternar visibilidad
+	function toggleLayerVisibility(layerType) {
+	    const map = GISDashboard.getMap();
+	    
+	    switch(layerType) {
+	        case 'buildings':
+	            if (buildingsCluster) {
+	                if (map.hasLayer(buildingsCluster)) {
+	                    map.removeLayer(buildingsCluster);
+	                } else {
+	                    map.addLayer(buildingsCluster);
+	                }
+	            }
+	            break;
+	            
+	        case 'civil-works':
+	            if (activeLayer) {
+	                if (map.hasLayer(activeLayer)) {
+	                    map.removeLayer(activeLayer);
+	                } else {
+	                    map.addLayer(activeLayer);
+	                }
+	            }
+	            break;
+	            
+	        case 'catastro':
+	            if (window.catastroLayer) {
+	                if (map.hasLayer(window.catastroLayer)) {
+	                    map.removeLayer(window.catastroLayer);
+	                } else {
+	                    map.addLayer(window.catastroLayer);
+	                }
+	            }
+	            break;
+	    }
+	}
+
+	// Función para actualizar el icono del ojo
+	function updateVisibilityIcon(button, layerType) {
+	    const map = GISDashboard.getMap();
+	    const icon = button.querySelector('i');
+	    let isVisible = false;
+	    
+	    switch(layerType) {
+	        case 'buildings':
+	            isVisible = buildingsCluster && map.hasLayer(buildingsCluster);
+	            break;
+	        case 'civil-works':
+	            isVisible = activeLayer && map.hasLayer(activeLayer);
+	            break;
+	        case 'catastro':
+	            isVisible = window.catastroLayer && map.hasLayer(window.catastroLayer);
+	            break;
+	    }
+	    
+	    if (isVisible) {
+	        icon.classList.replace("bi-eye-slash-fill", "bi-eye-fill");
+	    } else {
+	        icon.classList.replace("bi-eye-fill", "bi-eye-slash-fill");
+	    }
+	}
+
 
     // Cargar todas las opciones de filtro disponibles
 	function loadAllFilterOptions() {
@@ -479,46 +584,56 @@ LayersModule = (function() {
 	}
 
 	function applyBuildingsStyle(groupBy) {
-	  if (!buildingsCluster) return;
+	  if (!window.baseBuildingsGeojson || !buildingsCluster) return;
 
-	  buildingsCluster.eachLayer(layer => {
-	    const feature = layer.feature;
-	    const props = feature.properties;
-	    const homes = props.homes_info || [];
+	  const map = GISDashboard.getMap();
 
-	    // 1. Evaluar visibilidad con los filtros actuales
-	    const isVisible = checkFeatureVisibility(feature, currentFilters, "buildings");
+	  // Eliminar todos los subcapas del cluster
+	  buildingsCluster.clearLayers();
 
-	    // 2. Determinar el valor por el cual clasificar (para color)
-	    let value;
-	    if (['building_status', 'has_class'].includes(groupBy)) {
-	      value = homes.find(h => h[groupBy])?.[groupBy] || 'OTHER';
-	    } else {
-	      value = props[groupBy] || 'OTHER';
-	    }
+	  // Crear capa filtrada
+	  const filteredLayer = L.geoJSON(window.baseBuildingsGeojson, {
+	    filter: feature => checkFeatureVisibility(feature, currentFilters, "buildings"),
 
-	    // 3. Generar color basado en ese valor
-	    const color = getColorFromString(value);
+	    pointToLayer: (feature, latlng) => {
+	      let value;
 
-	    // 4. Aplicar estilo
-	    layer.setStyle({
-	      fillColor: color,
-	      color: "#000",
-	      weight: isVisible ? 2 : 0.5,
-	      opacity: isVisible ? 1 : 0,
-	      fillOpacity: isVisible ? 0.85 : 0,
-	    });
+	      const homes = feature.properties?.homes_info || [];
 
-	    // 5. Cambiar tamaño del círculo
-	    if (layer.setRadius) {
-	      layer.setRadius(isVisible ? 8 : 0);  // 0 = ocultar completamente
-	    }
+	      if (['building_status', 'has_class'].includes(groupBy)) {
+	        value = homes.find(h => h[groupBy])?.[groupBy] || 'OTHER';
+	      } else {
+	        value = feature.properties?.[groupBy] || 'OTHER';
+	      }
 
-	    // 6. Controlar si puede recibir eventos
-	    if (layer._path) {
-	      layer._path.setAttribute('pointer-events', isVisible ? 'auto' : 'none');
-	    }
+	      const color = getColorFromString(value);
+	      const zoom = map.getZoom();
+	      const radius = zoom >= 17 ? 6 : zoom >= 15 ? 4 : 2;
+
+	      return L.circleMarker(latlng, {
+	        radius: radius,
+	        fillColor: color,
+	        color: "#000",
+	        weight: 1,
+	        opacity: 1,
+	        fillOpacity: 0.85
+	      });
+	    },
+
+	    onEachFeature: bindPopup
 	  });
+
+	  // Añadir al cluster solo los visibles
+	  buildingsCluster.addLayer(filteredLayer);
+
+	  // Asegurarse de que está en el mapa
+	  if (!map.hasLayer(buildingsCluster)) {
+	    map.addLayer(buildingsCluster);
+	  }
+
+	  // Actualizar leyenda y contadores
+	  updateLegend();
+	  updateLegendCounters();
 	}
 
 
@@ -549,6 +664,34 @@ LayersModule = (function() {
 	    }
 
 	    return true;
+	}
+	
+	function updateInitialVisibilityStates() {
+	    const map = GISDashboard.getMap();
+	    
+	    document.querySelectorAll('.layer-visibility-btn').forEach(btn => {
+	        const layerType = btn.dataset.layer;
+	        const icon = btn.querySelector('i');
+	        
+	        let isVisible = false;
+	        switch(layerType) {
+	            case 'buildings':
+	                isVisible = buildingsCluster && map.hasLayer(buildingsCluster);
+	                break;
+	            case 'civil-works':
+	                isVisible = activeLayer && map.hasLayer(activeLayer);
+	                break;
+	            case 'catastro':
+	                isVisible = window.catastroLayer && map.hasLayer(window.catastroLayer);
+	                break;
+	        }
+	        
+	        if (isVisible) {
+	            icon.classList.replace("bi-eye-slash-fill", "bi-eye-fill");
+	        } else {
+	            icon.classList.replace("bi-eye-fill", "bi-eye-slash-fill");
+	        }
+	    });
 	}
 
 	
@@ -693,13 +836,42 @@ LayersModule = (function() {
 		GISDashboard.getMap().on("zoomend", () => {
 		  if (!buildingsCluster) return;
 
+		  const groupBy = document.getElementById("groupBySelect")?.value || 'village_pop';
+
 		  buildingsCluster.eachLayer(layer => {
-		    if (layer.setStyle && layer.feature?.geometry?.type === 'Point') {
-		      layer.setStyle(getLayerStyle(layer.feature));
+		    const feature = layer.feature;
+		    const isVisible = checkFeatureVisibility(feature, currentFilters, "buildings");
+
+		    const homes = feature.properties?.homes_info || [];
+		    let value;
+		    if (['building_status', 'has_class'].includes(groupBy)) {
+		      value = homes.find(h => h[groupBy])?.[groupBy] || 'OTHER';
+		    } else {
+		      value = feature.properties?.[groupBy] || 'OTHER';
+		    }
+
+		    const color = getColorFromString(value);
+
+		    layer.setStyle({
+		      fillColor: color,
+		      color: "#000",
+		      weight: isVisible ? 2 : 0.5,
+		      opacity: isVisible ? 1 : 0,
+		      fillOpacity: isVisible ? 0.85 : 0
+		    });
+
+		    if (layer.setRadius) {
+		      layer.setRadius(isVisible ? 8 : 0);  // 0 = ocultar completamente
+		    }
+
+		    if (layer._path) {
+		      layer._path.setAttribute('pointer-events', isVisible ? 'auto' : 'none');
 		    }
 		  });
-		});
 
+		  updateLegend();
+		  updateLegendCounters();
+		});
 
 	    // Ajustar vista
 	    if (geojsonLayer.getBounds().isValid()) {
@@ -712,11 +884,21 @@ LayersModule = (function() {
 	    const groupBy = document.getElementById("groupBySelect")?.value || 'village_pop';
 	    applyBuildingsStyle(groupBy);
 	    updateLegendCounters();
+		window.baseBuildingsGeojson = geojson;  // Guardamos los datos base para reutilizarlos
+
 
 	  } catch (err) {
 	    console.error("Error al cargar capa buildings:", err);
 	  }
 	}
+	
+	function clearBuildingsLayer() {
+	  if (buildingsCluster) {
+	    GISDashboard.getMap().removeLayer(buildingsCluster);
+	    buildingsCluster = null;
+	  }
+	}
+
 
 
 	function getLayerStyle(feature) {
@@ -724,20 +906,22 @@ LayersModule = (function() {
 	    const layerTarget = document.getElementById("layerFilterTarget")?.value || "civil-works";
 	    
 		if (layerTarget === "buildings" && feature.geometry.type === 'Point') {
-		    const status = getBuildingStatus(feature.properties);
+		    const homes = feature.properties.homes_info || [];
+		    const status = homes.find(h => h.building_status)?.building_status || 'undefined';
 		    const zoom = GISDashboard.getMap().getZoom();
 		    const radius = zoom >= 17 ? 6 : zoom >= 15 ? 4 : 2;
 
 		    return {
-		      radius,
-		      fillColor: getStatusColor(status),
-		      color: '#333',
-		      weight: 1,
-		      opacity: 0.8,
-		      fillOpacity: 0.4,
-		      interactive: true
+		        radius,
+		        fillColor: getStatusColor(status),
+		        color: '#333',
+		        weight: 1,
+		        opacity: 0.8,
+		        fillOpacity: 0.4,
+		        interactive: true
 		    };
-		  }
+		}
+
 	    
 	    // Para Civil Works (líneas/polígonos)
 	    const value = feature.properties[groupBy] || 'default';
@@ -765,6 +949,20 @@ LayersModule = (function() {
 	        ...visibleLineStyle
 	    };
 	}
+	
+	function getStatusColor(status) {
+	    const map = {
+	        "planning": "#ffc107",
+	        "construction": "#007bff",
+	        "completed": "#28a745",
+	        "undefined": "#6c757d",
+			"Obstruction": "#dc3545",
+			"Open": "#17a2b8",
+	    };
+
+	    return map[status?.toLowerCase()] || "#6c757d";
+	}
+
 
 
 	function getColorFromString(str) {
@@ -970,18 +1168,15 @@ LayersModule = (function() {
         init,
         loadCivilWorksLayer,
 		loadBuildingsLayer,
+		clearBuildingsLayer,
         applyLayerStyle,
 		toggleFilterSection,
-        toggleLayerVisibility: function() {
-            const map = GISDashboard.getMap();
-            if (activeLayer) {
-                if (map.hasLayer(activeLayer)) {
-                    map.removeLayer(activeLayer);
-                } else {
-                    map.addLayer(activeLayer);
-                }
-            }
-        },
+		toggleLayerVisibility: function(layerType) {
+		    const btn = document.querySelector(`.layer-visibility-btn[data-layer="${layerType}"]`);
+		    if (btn) {
+		        btn.click();
+		    }
+		},
         changeLayerOpacity: function(value) {
             if (activeLayer) {
                 activeLayer.setStyle({
@@ -996,7 +1191,13 @@ LayersModule = (function() {
 
 // Inicialización
 document.addEventListener("DOMContentLoaded", () => {
-    LayersModule.init();
+    const waitForGISDashboard = setInterval(() => {
+        if (window.GISDashboard?.getMap) {
+            clearInterval(waitForGISDashboard);
+            LayersModule.init();
+        }
+    }, 100);
 });
+
 
 window.LayersModule = LayersModule;
