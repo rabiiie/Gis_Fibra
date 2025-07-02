@@ -10,35 +10,11 @@
 	<th:block layout:fragment="styles">
 	    <!-- CSS de Leaflet -->
 	    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-	    
+
 	    <!-- ✅ Tu nuevo CSS global de HomeStyles -->
 	    <link rel="stylesheet" th:href="@{/css/HomeStyles.css}" />
-	    
-	    <style>
-	        /* Ajuste de padding lateral */
-	        #homeSection.container-fluid {
-	            padding-left: 0.5rem;
-	            padding-right: 0.5rem;
-	        }
-	        /* Ajuste del logo para que no exceda la altura de la barra */
-	        .navbar-brand img {
-	            max-height: 2.5rem;
-	            width: auto;
-	            object-fit: contain;
-	        }
-	        /* Suavizado y nitidez de texto */
-	        body {
-	            -webkit-font-smoothing: antialiased;
-	            -moz-osx-font-smoothing: grayscale;
-	            text-rendering: optimizeLegibility;
-	        }
-	        /* Asegurar que los canvas de Chart.js usen DPR para evitar blur */
-	        canvas {
-	            image-rendering: optimizeQuality;
-	        }
-	    </style>
 	</th:block>
-    
+
 </head>
 
 <body>

@@ -106,7 +106,7 @@
 /* Estilos del FOOTER */
 /************************************/
 .footer {
-    position: fixed;
+    position: relative;
     bottom: 0;
     left: 250px;
     width: calc(100% - 250px);
@@ -119,17 +119,10 @@
     font-size: 0.85rem;
     color: #343a40;
     z-index: 1020;
+
 }
 
-/*****************/
-/*main content*/
-/********************/
 
-.main-content {
-    padding-top: 70px; /* compensa el header */
-    padding-left: 1rem;
-    padding-right: 1rem;
-}
 
 /*****************/
 /* Deepseek Chatbot styles*/
