@@ -151,44 +151,61 @@ public class QgisProjectDAO {
 	}
 
 	public Map<String, Object> getCivilWorksGeoJSONByProject(Integer projectId, String type, String spec) {
-		StringBuilder sql = new StringBuilder("""
-			    SELECT jsonb_build_object(
-			        'type', 'FeatureCollection',
-			        'features', COALESCE(jsonb_agg(
-			            jsonb_build_object(
-			                'type', 'Feature',
-			                'geometry', ST_AsGeoJSON(c.geom)::jsonb,
-			                'properties', jsonb_build_object(
-			                    'civil_work_id', c.civil_work_id,
-			                    'dp_id', c.dp_id,
-			                    'dp_name', d.name,
-			                    'pop_id', c.pop_id,
-			                    'pop_name', p.name,
-			                    'street_id', c.street_id,
-			                    'street_name', s.name,
-			                    'type', c.type,
-			                    'spec', c.spec,
-			                    'status', c.status,
-			                    'layer', c.layer,
-			                    'length_m', c.length_meters,
-			                    'village', c.village,
-			                    'village_pop', c.village || '_' || p.name,
-			                    'tzip', c.tzip,
-			                    'geom_hash', c.geom_hash,
-			                    'parent_id', c.parent_id,
-			                    'label', c.label
-			                )
-			            )
-			        ), '[]'::jsonb)
-			    ) AS geojson
-			    FROM civil_works c
-			    JOIN pops p ON c.pop_id = p.pop_id
-			    LEFT JOIN dps d ON c.dp_id = d.dp_id
-			    LEFT JOIN streets s ON c.street_id = s.street_id
-			    WHERE p.project_id = ?
-			""");
+	    StringBuilder sql = new StringBuilder("""
+	        WITH built_labels AS (
+    -- 1. Construidos por building_id (GardenTrench y BuildingCross)
+    SELECT DISTINCT UPPER(building_id) AS label
+    FROM mastergrid
+    WHERE civiel_einddatum IS NOT NULL
+
+    UNION
+
+    -- 2. Construidos por label_dduct (Trench, Drilling tipo Ducto)
+    SELECT DISTINCT UPPER(h.label_dduct) AS label
+    FROM homes h
+    JOIN mastergrid m ON UPPER(h.home_id) = UPPER(m.auftragsnummer)
+    WHERE m.civiel_einddatum IS NOT NULL
+)
+
+SELECT jsonb_build_object(
+    'type', 'FeatureCollection',
+    'features', COALESCE(jsonb_agg(
+        jsonb_build_object(
+            'type', 'Feature',
+            'geometry', ST_AsGeoJSON(c.geom)::jsonb,
+            'properties', jsonb_build_object(
+                'civil_work_id', c.civil_work_id,
+                'dp_id',         c.dp_id,
+                'dp_name',       d.name,
+                'pop_id',        c.pop_id,
+                'pop_name',      p.name,
+                'street_id',     c.street_id,
+                'street_name',   s.name,
+                'type',          c.type,
+                'spec',          c.spec,
+                'status',        c.status,
+                'layer',         c.layer,
+                'length_m',      c.length_meters,
+                'village',       c.village,
+                'village_pop',   c.village || '_' || p.name,
+                'tzip',          c.tzip,
+                'geom_hash',     c.geom_hash,
+                'parent_id',     c.parent_id,
+                'label',         c.label,
+                'built',         (bl.label IS NOT NULL)
+            )
+        )
+    ), '[]'::jsonb)
+) AS geojson
+FROM civil_works c
+JOIN pops p     ON c.pop_id = p.pop_id
+LEFT JOIN dps d ON c.dp_id = d.dp_id
+LEFT JOIN streets s ON c.street_id = s.street_id
+LEFT JOIN built_labels bl ON UPPER(c.label) = bl.label
+WHERE p.project_id = ?
 
 
+	    """);
 
 	    List<Object> params = new ArrayList<>();
 	    params.add(projectId);
@@ -209,7 +226,6 @@ public class QgisProjectDAO {
 	        params.toArray()
 	    );
 	}
-
 
 
 }

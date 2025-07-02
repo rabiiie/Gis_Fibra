@@ -7,7 +7,7 @@ LayersModule = (function() {
 	let catastroToggleButton = null;
 	let currentFilters = {
 	  type: [], village_pop: [], spec: [],
-	  dp_name: [], building_status: [], has_class: [],street_name: []
+	  dp_name: [], building_status: [], has_class: [],street_name: [], built: []
 	};
 
     let availableValues = {};
@@ -15,18 +15,23 @@ LayersModule = (function() {
     // Obtener valores únicos para una propiedad
 	function getUniqueValues(property) {
 	    if (!activeLayer) return [];
-	    
+
 	    const layers = activeLayer.getLayers();
 	    const values = new Set();
-	    
+
 	    layers.forEach(layer => {
 	        const value = layer.feature?.properties[property];
-	        // Manejar valores null, undefined o vacíos
-	        values.add(value || 'OTHER');
+
+	        if (property === 'built') {
+	            values.add(String(value));
+	        } else {
+	            values.add(value || 'OTHER');
+	        }
 	    });
-	    
+
 	    return Array.from(values).sort();
 	}
+
 
     // Inicialización
     function init() {
@@ -239,6 +244,8 @@ LayersModule = (function() {
 	    createAndUpdate('spec', 'Especificación');
 	    createAndUpdate('dp_name', 'DP');
 	    createAndUpdate('street_name', 'Calle');
+		createAndUpdate('built', 'Construido');
+		
 	  }
 
 	  if (layerTarget === "buildings" && buildingsCluster) {
@@ -246,6 +253,7 @@ LayersModule = (function() {
 	    createAndUpdate('dp_name', 'DP');
 	    createAndUpdate('building_status', 'Estado del edificio', getUniqueValuesFromHomes);
 	    createAndUpdate('has_class', 'HAS', getUniqueValuesFromHomes);
+		createAndUpdate('built', 'Built');
 	  }
 	}
 
@@ -649,28 +657,32 @@ LayersModule = (function() {
 	function checkFeatureVisibility(feature, filters, layerTarget) {
 	    const props = feature.properties;
 	    
-	    if (layerTarget === "civil-works") {
-	        return ['type', 'village_pop', 'spec', 'dp_name', 'street_name'].every(prop =>
-	            Array.isArray(filters[prop]) &&
-	            (filters[prop].length === 0 || filters[prop].includes(props[prop]))
-	        );
-	    }
+		if (layerTarget === "civil-works") {
+		    return ['type', 'village_pop', 'spec', 'dp_name', 'street_name', 'built'].every(prop =>
+		        Array.isArray(filters[prop]) &&
+		        (filters[prop].length === 0 || filters[prop].includes(
+		            prop === 'built' ? String(props[prop]) : props[prop]
+		        ))
+		    );
+		}
 
-	    if (layerTarget === "buildings") {
-	        const directPass = ['village_pop', 'dp_name'].every(prop =>
-	            Array.isArray(filters[prop]) &&
-	            (filters[prop].length === 0 || filters[prop].includes(props[prop]))
-	        );
-	        
-	        if (!directPass) return false;
+		if (layerTarget === "buildings") {
+		    const directPass = ['village_pop', 'dp_name', 'built'].every(prop =>
+		        Array.isArray(filters[prop]) &&
+		        (filters[prop].length === 0 || filters[prop].includes(
+		            prop === 'built' ? String(props[prop]) : props[prop]
+		        ))
+		    );
 
-	        const homes = props.homes_info || [];
-	        return ['building_status', 'has_class'].every(prop =>
-	            Array.isArray(filters[prop]) &&
-	            (filters[prop].length === 0 ||
-	             homes.some(home => home[prop] && filters[prop].includes(home[prop])))
-	        );
-	    }
+		    if (!directPass) return false;
+
+		    const homes = props.homes_info || [];
+		    return ['building_status', 'has_class'].every(prop =>
+		        !filters[prop] || filters[prop].length === 0 ||
+		        homes.some(home => home[prop] && filters[prop].includes(home[prop]))
+		    );
+		}
+
 
 	    return true;
 	}
@@ -1002,70 +1014,80 @@ LayersModule = (function() {
 	function bindPopup(feature, layer) {
 	    const props = feature.properties;
 
-	    if (feature.geometry.type === 'Point') {
-	        // Popup para edificios (Buildings)
-	        let content = `<div class="popup-info">`;
-	        content += `<h4>Building: ${props.building_id || 'N/A'}</h4>`;
-	        content += `<ul>`;
-	        content += `<li><strong>Street:</strong> ${props.street_name || '-'}</li>`;
-	        content += `<li><strong>DP:</strong> ${props.dp_name || '-'}</li>`;
-	        content += `<li><strong>village_pop:</strong> ${props.village_pop || '-'}</li>`;
-	        content += `<li><strong>Total Homes:</strong> ${props.total_homes || 0}</li>`;
-	        content += `<li><strong>Construido:</strong> ${props.built ? '✅ Construido' : '❌ Pendiente'}</li>`;
-	        content += `</ul>`;
+		if (feature.geometry.type === 'Point') {
+		    // Popup for Buildings
+		    let content = `<div class="popup-info">`;
+		    content += `<h4>Building: ${props.building_id || 'N/A'}</h4>`;
+		    content += `<ul>`;
+		    content += `<li><strong>Street:</strong> ${props.street_name || '-'}</li>`;
+		    content += `<li><strong>DP:</strong> ${props.dp_name || '-'}</li>`;
+		    content += `<li><strong>Village / PoP:</strong> ${props.village_pop || '-'}</li>`;
+		    content += `<li><strong>Total Homes:</strong> ${props.total_homes || 0}</li>`;
+		    const builtText = props.built === true || props.built === "true" ? '✅ Constructed' : '❌ Not constructed';
+		    content += `<li><strong>Built:</strong> ${builtText}</li>`;
+		    content += `</ul>`;
 
-	        if (props.homes_info && Array.isArray(props.homes_info)) {
-	            content += `<hr><h5>Homes Info:</h5>`;
-	            props.homes_info.forEach((home, index) => {
-	                content += `<p><strong>Home ${index + 1}: ${home.home_id || 'N/A'}</strong></p>`;
-	                content += `<ul>`;
-	                content += `<li><strong>Anschlussstatus:</strong> ${home.anschlussstatus || '-'}</li>`;
-	                content += `<li><strong>Aufgabenstatus:</strong> ${home.aufgabenstatus || '-'}</li>`;
-	                content += `<li><strong>building Status:</strong> ${home.building_status || '-'}</li>`;
-	                content += `<li><strong>HAS Class:</strong> ${home.has_class || '-'}</li>`;
-	                content += `<li><strong>PHA:</strong> ${home.phassive ? 'Yes' : 'No'}</li>`;
-	                content += `<li><strong>Fecha Obra Civil:</strong> ${home.civil_einddatum || 'Pending'}</li>`;
-	                content += `</ul>`;
-	            });
-	        }
+		    if (props.homes_info && Array.isArray(props.homes_info)) {
+		        content += `<hr><h5>Homes Information:</h5>`;
+		        props.homes_info.forEach((home, index) => {
+		            content += `<p><strong>Home ${index + 1}: ${home.home_id || 'N/A'}</strong></p>`;
+		            content += `<ul>`;
+		            content += `<li><strong>Connection Status:</strong> ${home.anschlussstatus || '-'}</li>`;
+		            content += `<li><strong>Task Status:</strong> ${home.aufgabenstatus || '-'}</li>`;
+		            content += `<li><strong>Building Status:</strong> ${home.building_status || '-'}</li>`;
+		            content += `<li><strong>HAS Class:</strong> ${home.has_class || '-'}</li>`;
+		            content += `<li><strong>PHA:</strong> ${home.phassive ? 'Yes' : 'No'}</li>`;
+		            content += `<li><strong>Civil Works Date:</strong> ${home.civil_einddatum || 'Pending'}</li>`;
+		            content += `</ul>`;
+		        });
+		    }
 
-	        content += `</div>`;
-	        layer.bindPopup(content);
-	    } else {
-	        // Popup para Civil Works
-	        let content = `<div class="popup-info">`;
-	        content += `<h4>Civil Work</h4>`;
-	        content += `<ul>`;
-	        content += `<li><strong>Type:</strong> ${props.type || '-'}</li>`;
-	        content += `<li><strong>village_pop:</strong> ${props.village_pop || '-'}</li>`;
-	        content += `<li><strong>Spec:</strong> ${props.spec || '-'}</li>`;
-	        content += `<li><strong>Status:</strong> ${props.status || '-'}</li>`;
-	        content += `<li><strong>Length:</strong> ${props.length_m || '-'} m</li>`;
-	        content += `<li><strong>Start Date:</strong> ${props.start_date || '-'}</li>`;
-	        content += `<li><strong>End Date:</strong> ${props.end_date || '-'}</li>`;
-	        content += `<li><strong>Contractor:</strong> ${props.contractor || '-'}</li>`;
-	        content += `<li><strong>Project ID:</strong> ${props.project_id || '-'}</li>`;
-	        content += `<li><strong>Comments:</strong> ${props.comments || '-'}</li>`;
-	        content += `</ul>`;
+		    content += `</div>`;
+		    layer.bindPopup(content);
 
-	        // Mostrar campos adicionales
-	        const excludedFields = ['type', 'village_pop', 'spec', 'status', 'length_m',
-	            'start_date', 'end_date', 'contractor', 'project_id', 'comments'];
+	    } 	 else {
+		    // Popup for Civil Works
+		    let content = `<div class="popup-info">`;
+		    content += `<h4>Civil Work</h4>`;
+		    content += `<ul>`;
+		    content += `<li><strong>Type:</strong> ${props.type || '-'}</li>`;
+		    content += `<li><strong>Village / PoP:</strong> ${props.village_pop || '-'}</li>`;
+		    content += `<li><strong>Specification:</strong> ${props.spec || '-'}</li>`;
+		    content += `<li><strong>Status:</strong> ${props.status || '-'}</li>`;
+		    content += `<li><strong>Length:</strong> ${props.length_m || '-'} m</li>`;
+		    content += `<li><strong>Start Date:</strong> ${props.start_date || '-'}</li>`;
+		    content += `<li><strong>End Date:</strong> ${props.end_date || '-'}</li>`;
+		    content += `<li><strong>Contractor:</strong> ${props.contractor || '-'}</li>`;
+		    content += `<li><strong>Project ID:</strong> ${props.project_id || '-'}</li>`;
 
-	        const additionalFields = Object.keys(props)
-	            .filter(key => !excludedFields.includes(key) && props[key] !== undefined && props[key] !== null);
+		    if ('built' in props) {
+		        const builtText = props.built === true || props.built === "true" ? '✅ Constructed' : '❌ Not constructed';
+		        content += `<li><strong>Built:</strong> ${builtText}</li>`;
+		    }
 
-	        if (additionalFields.length > 0) {
-	            content += `<hr><h5>Additional Info:</h5><ul>`;
-	            additionalFields.forEach(field => {
-	                content += `<li><strong>${field}:</strong> ${props[field]}</li>`;
-	            });
-	            content += `</ul>`;
-	        }
+		    content += `<li><strong>Comments:</strong> ${props.comments || '-'}</li>`;
+		    content += `</ul>`;
 
-	        content += `</div>`;
-	        layer.bindPopup(content);
-	    }
+		    const excludedFields = [
+		        'type', 'village_pop', 'spec', 'status', 'length_m',
+		        'start_date', 'end_date', 'contractor', 'project_id',
+		        'comments', 'built'
+		    ];
+
+		    const additionalFields = Object.keys(props)
+		        .filter(key => !excludedFields.includes(key) && props[key] !== undefined && props[key] !== null);
+
+		    if (additionalFields.length > 0) {
+		        content += `<hr><h5>Additional Info:</h5><ul>`;
+		        additionalFields.forEach(field => {
+		            content += `<li><strong>${field}:</strong> ${props[field]}</li>`;
+		        });
+		        content += `</ul>`;
+		    }
+
+		    content += `</div>`;
+		    layer.bindPopup(content);
+		}
 
 	    // Estilo hover solo para geometrías no puntuales
 	    if (feature.geometry.type !== 'Point') {
