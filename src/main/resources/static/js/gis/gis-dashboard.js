@@ -7,7 +7,7 @@ const GISAdvanced = (function() {
     let currentClientId = null;
     let baseLayers = {};
     let overlayLayers = {};
-
+	
     // Inicialización
     function init() {
         initMap();
@@ -18,6 +18,7 @@ const GISAdvanced = (function() {
         // Inicializar módulos
         if (window.LayersModule) LayersModule.init();
         if (window.MeasurementModule) MeasurementModule.init(map);
+		initRotatingLogo();
     }
 
     // Configuración del mapa base
@@ -89,6 +90,39 @@ const GISAdvanced = (function() {
 		});
 
 	}
+	
+	function initRotatingLogo() {
+		const logoImages = [
+		  '/images/insyte1.png',
+		  '/images/insyte2.png',
+		  '/images/insyte3.png'
+		];
+
+		let currentLogoIndex = 0;
+		const rotatingLogo = document.getElementById('rotatingLogo');
+
+		if (!rotatingLogo) return;
+
+		function rotateLogo() {
+		  rotatingLogo.style.opacity = 0;
+		  setTimeout(() => {
+		    currentLogoIndex = (currentLogoIndex + 1) % logoImages.length;
+		    rotatingLogo.src = logoImages[currentLogoIndex];
+		    rotatingLogo.style.opacity = 1;
+		  }, 500);
+		}
+
+		let rotateInterval = setInterval(rotateLogo, 3000);
+
+		rotatingLogo.addEventListener('mouseenter', () => {
+		  clearInterval(rotateInterval);
+		});
+
+		rotatingLogo.addEventListener('mouseleave', () => {
+		  rotateInterval = setInterval(rotateLogo, 3000);
+		});
+	}
+
 
 
     function handleDrawCreated(e) {

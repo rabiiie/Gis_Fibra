@@ -53,21 +53,37 @@ LayersModule = (function() {
 		    // Vaciar opciones actuales
 		    groupBySelect.innerHTML = '';
 		    
-		    if (target === "civil-works") {
-		        ['village_pop','type','spec'].forEach(opt => {
-		            const option = document.createElement('option');
-		            option.value = opt;
-		            option.textContent = opt.toUpperCase();
-		            groupBySelect.appendChild(option);
-		        });
-		    } else if (target === "buildings") {
-		        ['village_pop','dp_name','building_status','has_class', 'street_name'].forEach(opt => {
-		            const option = document.createElement('option');
-		            option.value = opt;
-		            option.textContent = opt.replace(/_/g, ' ').toUpperCase();
-		            groupBySelect.appendChild(option);
-		        });
-		    }
+			if (target === "civil-works") {
+			    const options = [
+			        { value: 'village_pop', label: 'Village / PoP' },
+			        { value: 'type', label: 'Tipo de obra' },
+			        { value: 'spec', label: 'Especificación' },
+			        { value: 'dp_name', label: 'DP' },
+			        { value: 'street_name', label: 'Calle' }
+			    ];
+			    options.forEach(opt => {
+			        const option = document.createElement('option');
+			        option.value = opt.value;
+			        option.textContent = opt.label;
+			        groupBySelect.appendChild(option);
+			    });
+
+		    } 			else if (target === "buildings") {
+			    const options = [
+			        { value: 'village_pop', label: 'Village / PoP' },
+			        { value: 'dp_name', label: 'DP' },
+			        { value: 'building_status', label: 'Estado del edificio' },
+			        { value: 'has_class', label: 'HAS' },
+			        { value: 'street_name', label: 'Calle' }
+			    ];
+			    options.forEach(opt => {
+			        const option = document.createElement('option');
+			        option.value = opt.value;
+			        option.textContent = opt.label;
+			        groupBySelect.appendChild(option);
+			    });
+			}
+
 		    
 		    loadAllFilterOptions();
 		});
@@ -182,59 +198,57 @@ LayersModule = (function() {
 	    }
 	}
 
+	function createFilterAccordionItem(prop, labelText) {
+	    const accordion = document.getElementById("filtersAccordion");
+	    const itemId = `filter_${prop}`;
+
+	    const html = `
+	    <div class="accordion-item" data-prop="${prop}">
+	      <h2 class="accordion-header" id="heading_${itemId}">
+	        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_${itemId}" aria-expanded="false" aria-controls="collapse_${itemId}">
+	          ${labelText} <span id="count_${prop}" class="ms-auto badge bg-secondary">0</span>
+	        </button>
+	      </h2>
+	      <div id="collapse_${itemId}" class="accordion-collapse collapse" aria-labelledby="heading_${itemId}" data-bs-parent="#filtersAccordion">
+	        <div class="accordion-body" id="filterBody_${prop}"></div>
+	      </div>
+	    </div>`;
+
+	    accordion.insertAdjacentHTML('beforeend', html);
+	}
 
     // Cargar todas las opciones de filtro disponibles
 	function loadAllFilterOptions() {
-	    const layerTarget = document.getElementById("layerFilterTarget")?.value || "civil-works";
+	  const layerTarget = document.getElementById("layerFilterTarget")?.value || "civil-works";
+	  const accordion = document.getElementById("filtersAccordion");
 
-	    // Ocultar y vaciar TODO por defecto
-	    const allFilterContainers = document.querySelectorAll('.filter-content');
-	    allFilterContainers.forEach(c => {
-	        c.classList.add("d-none");
-	        c.innerHTML = "";
-	    });
+	  // Limpiar contenido anterior
+	  accordion.innerHTML = "";
+	  availableValues = {};
 
-	    availableValues = {};
+	  const createAndUpdate = (prop, label, valuesSource = getUniqueValues) => {
+	    const values = valuesSource(prop).map(v => v || 'OTHER');
+	    availableValues[prop] = values;
+	    createFilterAccordionItem(prop, label);
+	    updateFilterControls(prop); // <- esto llena los checkboxes
+	  };
 
-	    // Para civil-works
-	    if (layerTarget === "civil-works" && activeLayer) {
-	        ['type', 'village_pop', 'spec','dp_name','street_name'].forEach(prop => {
-	            const container = document.getElementById(`filterControls_${prop}`);
-	            if (!container) return;
+	  if (layerTarget === "civil-works" && activeLayer) {
+	    createAndUpdate('type', 'Tipo');
+	    createAndUpdate('village_pop', 'Village / PoP');
+	    createAndUpdate('spec', 'Especificación');
+	    createAndUpdate('dp_name', 'DP');
+	    createAndUpdate('street_name', 'Calle');
+	  }
 
-	            // Añadir soporte para valores nulos/vacíos como "OTHER"
-	            let values = getUniqueValues(prop).map(v => v || 'OTHER');
-	            availableValues[prop] = values;
-	            updateFilterControls(prop);
-	            container.classList.remove("d-none");
-	        });
-	    }
-
-	    // Para buildings
-	    else if (layerTarget === "buildings" && buildingsCluster) {
-	        // Filtros directos
-	        ['village_pop', 'dp_name'].forEach(prop => {
-	            const container = document.getElementById(`filterControls_${prop}`);
-	            if (!container) return;
-
-				let values = getUniqueValues(prop).map(v => v || 'OTHER');
-	            availableValues[prop] = values;
-	            updateFilterControls(prop);
-	            container.classList.remove("d-none");
-	        });
-
-	        // Filtros de homes_info
-	        ['building_status', 'has_class'].forEach(prop => {
-	            const container = document.getElementById(`filterControls_${prop}`);
-	            if (!container) return;
-
-	            let values = getUniqueValuesFromHomes(prop).map(v => v || 'OTHER');
-	            availableValues[prop] = values;
-	            updateFilterControls(prop);
-	            container.classList.remove("d-none");
-	        });
-	    }
+	  if (layerTarget === "buildings" && buildingsCluster) {
+	    createAndUpdate('village_pop', 'Village / PoP');
+	    createAndUpdate('dp_name', 'DP');
+	    createAndUpdate('building_status', 'Estado del edificio', getUniqueValuesFromHomes);
+	    createAndUpdate('has_class', 'HAS', getUniqueValuesFromHomes);
+	  }
 	}
+
 
 
 	function getUniqueValuesFromHomes(property) {
@@ -424,7 +438,8 @@ LayersModule = (function() {
 	}
 
 	function updateFilterCount(property) {
-	    const checkboxes = document.querySelectorAll(`#filterControls_${property} input[type="checkbox"]:not(.select-all-check)`);
+		const checkboxes = document.querySelectorAll(`#filterBody_${property} input[type="checkbox"]:not(.select-all-check)`);
+
 	    const checked = Array.from(checkboxes).filter(cb => cb.checked).length;
 	    const total = checkboxes.length;
 
@@ -434,15 +449,14 @@ LayersModule = (function() {
 
 
 	function updateFilterControls(property) {
-	    const filterContainer = document.getElementById(`filterControls_${property}`);
+	    const filterContainer = document.getElementById(`filterBody_${property}`);
 	    if (!filterContainer) {
-	        console.error(`Contenedor de filtro no encontrado: filterControls_${property}`);
+	        console.error(`Contenedor de filtro no encontrado: filterBody_${property}`);
 	        return;
 	    }
 
 	    const values = Array.isArray(availableValues[property]) ? availableValues[property] : [];
 
-	    // ✅ Evitar errores si no está inicializado
 	    if (!Array.isArray(currentFilters[property])) {
 	        currentFilters[property] = [];
 	    }
@@ -450,23 +464,24 @@ LayersModule = (function() {
 	    const allChecked = currentFilters[property].length === 0 || currentFilters[property].length === values.length;
 
 	    let html = `
-	        <div class="filter-header-inner">
+	        <div class="filter-header-inner mb-2">
 	            <label class="select-all-label">
-	                <input type="checkbox" class="select-all-check" 
-	                       ${allChecked ? 'checked' : ''} data-prop="${property}">
+	                <input type="checkbox" class="select-all-check" ${allChecked ? 'checked' : ''} data-prop="${property}">
 	                <span>Todos</span>
 	            </label>
 	        </div>`;
 
 	    values.forEach(value => {
 	        const isActive = currentFilters[property].length === 0 || currentFilters[property].includes(value);
+	        const safeValue = value.replace(/\W+/g, '_');
+
 	        html += `
-	        <div class="form-check">
-	            <input class="form-check-input" type="checkbox" 
-	                   id="filter_${property}_${value.replace(/\W+/g, '_')}" 
-	                   value="${value}" ${isActive ? 'checked' : ''}
-	                   data-prop="${property}">
-	            <label class="form-check-label" for="filter_${property}_${value.replace(/\W+/g, '_')}">
+	        <div class="form-check form-check-sm">
+	            <input class="form-check-input" type="checkbox"
+	                id="filter_${property}_${safeValue}"
+	                value="${value}" ${isActive ? 'checked' : ''}
+	                data-prop="${property}">
+	            <label class="form-check-label" for="filter_${property}_${safeValue}">
 	                ${value}
 	            </label>
 	        </div>`;
@@ -474,23 +489,18 @@ LayersModule = (function() {
 
 	    filterContainer.innerHTML = html;
 
-	    // Evento para el checkbox "Todos"
+	    // Checkbox "Todos"
 	    const selectAll = filterContainer.querySelector('.select-all-check');
-		selectAll?.addEventListener('change', function () {
-		    const checkboxes = filterContainer.querySelectorAll(`input[type="checkbox"]:not(.select-all-check)`);
-		    checkboxes.forEach(cb => cb.checked = this.checked);
+	    selectAll?.addEventListener('change', function () {
+	        const checkboxes = filterContainer.querySelectorAll(`input[type="checkbox"]:not(.select-all-check)`);
+	        checkboxes.forEach(cb => cb.checked = this.checked);
 
-		    if (this.checked) {
-		        currentFilters[property] = [];  // Significa "todos"
-		    } else {
-		        currentFilters[property] = [];  // Ninguno seleccionado
-		    }
+	        currentFilters[property] = this.checked ? [] : [];
 
-		    applyFilters();
-		});
+	        applyFilters();
+	    });
 
-
-	    // Evento para checkboxes individuales
+	    // Checkbox individuales
 	    const individualCheckboxes = filterContainer.querySelectorAll(`input[type="checkbox"]:not(.select-all-check)`);
 	    individualCheckboxes.forEach(cb => {
 	        cb.addEventListener('change', function () {
@@ -499,20 +509,19 @@ LayersModule = (function() {
 	                .map(cb => cb.value);
 
 	            currentFilters[property] = selected.length === values.length ? [] : selected;
-
-	            // Actualiza el estado del checkbox "Todos"
 	            selectAll.checked = selected.length === values.length;
 
-	            updateMapVisibility(); // aplica filtros a los elementos del mapa
+	            updateMapVisibility();
 	            updateFilterCount(property);
-				applyFilters(); // aplica filtros a la capa activa
+	            applyFilters();
 	        });
 	    });
 
-		updateMapVisibility(); // aplica filtros a los elementos del mapa
+	    updateMapVisibility();
 	    updateFilterCount(property);
-		applyFilters(); // aplica filtros a la capa activa
+	    applyFilters();
 	}
+
 
 	function applyFilters() {
 	    const layerTarget = document.getElementById("layerFilterTarget")?.value || "civil-works";
@@ -1002,6 +1011,7 @@ LayersModule = (function() {
 	        content += `<li><strong>DP:</strong> ${props.dp_name || '-'}</li>`;
 	        content += `<li><strong>village_pop:</strong> ${props.village_pop || '-'}</li>`;
 	        content += `<li><strong>Total Homes:</strong> ${props.total_homes || 0}</li>`;
+	        content += `<li><strong>Construido:</strong> ${props.built ? '✅ Construido' : '❌ Pendiente'}</li>`;
 	        content += `</ul>`;
 
 	        if (props.homes_info && Array.isArray(props.homes_info)) {
@@ -1013,7 +1023,8 @@ LayersModule = (function() {
 	                content += `<li><strong>Aufgabenstatus:</strong> ${home.aufgabenstatus || '-'}</li>`;
 	                content += `<li><strong>building Status:</strong> ${home.building_status || '-'}</li>`;
 	                content += `<li><strong>HAS Class:</strong> ${home.has_class || '-'}</li>`;
-	                content += `<li><strong>PHA:</strong> ${home.pha ? 'Yes' : 'No'}</li>`;
+	                content += `<li><strong>PHA:</strong> ${home.phassive ? 'Yes' : 'No'}</li>`;
+	                content += `<li><strong>Fecha Obra Civil:</strong> ${home.civil_einddatum || 'Pending'}</li>`;
 	                content += `</ul>`;
 	            });
 	        }
@@ -1036,14 +1047,14 @@ LayersModule = (function() {
 	        content += `<li><strong>Project ID:</strong> ${props.project_id || '-'}</li>`;
 	        content += `<li><strong>Comments:</strong> ${props.comments || '-'}</li>`;
 	        content += `</ul>`;
-	        
-	        // Mostrar todos los campos adicionales que no son los principales
-	        const excludedFields = ['type', 'village_pop', 'spec', 'status', 'length_m', 
-	                              'start_date', 'end_date', 'contractor', 'project_id', 'comments'];
-	        
+
+	        // Mostrar campos adicionales
+	        const excludedFields = ['type', 'village_pop', 'spec', 'status', 'length_m',
+	            'start_date', 'end_date', 'contractor', 'project_id', 'comments'];
+
 	        const additionalFields = Object.keys(props)
 	            .filter(key => !excludedFields.includes(key) && props[key] !== undefined && props[key] !== null);
-	        
+
 	        if (additionalFields.length > 0) {
 	            content += `<hr><h5>Additional Info:</h5><ul>`;
 	            additionalFields.forEach(field => {
@@ -1051,14 +1062,14 @@ LayersModule = (function() {
 	            });
 	            content += `</ul>`;
 	        }
-	        
+
 	        content += `</div>`;
 	        layer.bindPopup(content);
 	    }
 
 	    // Estilo hover solo para geometrías no puntuales
 	    if (feature.geometry.type !== 'Point') {
-	        layer.on('mouseover', function() {
+	        layer.on('mouseover', function () {
 	            this.setStyle({
 	                weight: 5,
 	                color: '#ff9800',
@@ -1068,11 +1079,12 @@ LayersModule = (function() {
 	            this.bringToFront();
 	        });
 
-	        layer.on('mouseout', function() {
+	        layer.on('mouseout', function () {
 	            this.setStyle(getLayerStyle(feature));
 	        });
 	    }
 	}
+
 
     // Aplicar estilo
 	function applyLayerStyle() {

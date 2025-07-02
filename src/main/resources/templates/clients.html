@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GIS Dashboard Profesional</title>
+  <title>GIS Insytel</title>
 
   <!-- Librerías externas -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -25,28 +25,37 @@
 <body>
   <div class="gis-container">
     <!-- Barra superior -->
-    <div class="gis-toolbar">
-      <div class="gis-toolbar-title">
-        <div class="gis-logo">GIS</div>
-        <h1>GIS Insyte</h1>
-      </div>
-
-      <div class="gis-controls">
-        <div class="search-container">
-          <i class="bi bi-search"></i>
-          <input type="text" id="searchClient" placeholder="Buscar cliente..." />
-        </div>
-
-        <div class="gis-buttons">
-          <button class="gis-btn" onclick="reloadClients()">
-            <i class="bi bi-arrow-repeat"></i> Recargar
-          </button>
-          <button class="gis-btn gis-btn-primary" id="togglePanelBtn">
-            <i class="bi bi-list"></i> Clientes
-          </button>
-        </div>
-      </div>
+<div class="gis-toolbar">
+  <div class="gis-toolbar-brand">
+    <div class="logo-container">
+      <img id="rotatingLogo" class="gis-logo" src="/static/images/insyte1.png" alt="GIS Insyte Logo">
     </div>
+    <div class="brand-text">
+      <h1></h1>
+      <p class="tagline"></p>
+    </div>
+  </div>
+
+  <div class="gis-controls">
+    <div class="search-container">
+      <i class="bi bi-search"></i>
+      <input type="text" id="searchClient" placeholder="Buscar cliente..." />
+      <button class="search-btn"><i class="bi bi-arrow-right"></i></button>
+    </div>
+
+    <div class="gis-buttons">
+      <button class="gis-btn gis-btn-tool" onclick="reloadClients()" title="Recargar datos">
+        <i class="bi bi-arrow-repeat"></i>
+      </button>
+      <button class="gis-btn gis-btn-tool" id="toggleFullscreenBtn" title="Pantalla completa">
+        <i class="bi bi-fullscreen"></i>
+      </button>
+      <button class="gis-btn gis-btn-primary" id="togglePanelBtn">
+        <i class="bi bi-people-fill"></i> Clientes
+      </button>
+    </div>
+  </div>
+</div>
 
     <!-- Área del mapa -->
     <div class="gis-map-area">
@@ -70,27 +79,55 @@
       </div>
 
       <!-- Panel de gestión de capas -->
-	<div class="gis-layer-panel hidden" id="layerPanel">
-	  <div class="panel-header">
-	    <h2>Gestión de capas</h2>
-	    <button class="close-panel" id="closeLayerPanelBtn">
-	      <i class="bi bi-x-lg"></i>
-	    </button>
-	  </div>
-	
-	  <!-- Scroll interno -->
-	  <div class="layer-controls p-3">
-	  <div id="layersListContainer" class="mb-3"></div>
-	    <div class="mb-3">
-  <label for="layerFilterTarget" class="form-label">Capa:</label>
-  <div class="input-group input-group-sm">
-    <select id="layerFilterTarget" class="form-select">
-      <option value="civil-works">Civil Works</option>
-      <option value="buildings">Buildings</option>
-    </select>
+	<div class="gis-layer-panel" id="layerPanel">
+  <!-- Cabecera del panel -->
+  <div class="panel-header">
+    <h2><i class="bi bi-layers"></i> Capas</h2>
+    <button class="close-panel" id="closeLayerPanelBtn">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+
+  <!-- Controles de visibilidad -->
+  <div class="layer-controls p-3">
+
+    <!-- Selector de capa objetivo -->
+    <div class="mb-3">
+      <label for="layerFilterTarget" class="form-label">Seleccionar capa:</label>
+      <select id="layerFilterTarget" class="form-select form-select-sm">
+        <option value="civil-works">🛠 Civil Works</option>
+        <option value="buildings">🏢 Buildings</option>
+      </select>
+    </div>
+
+    <!-- Selector de agrupación -->
+    <div class="mb-3">
+      <label for="groupBySelect" class="form-label">Agrupar por:</label>
+      <select id="groupBySelect" class="form-select form-select-sm">
+        <option value="village_pop">Village / PoP</option>
+        <option value="type">Tipo de obra</option>
+        <option value="spec">Especificación</option>
+        <option value="dp_name">DP</option>
+        <option value="street_name">Calle</option>
+      </select>
+    </div>
+
+    <!-- Lista de capas con visibilidad -->
+    <div id="layersListContainer" class="mb-3"></div>
+
+    <!-- Filtros agrupados por sección -->
+    <div class="accordion" id="filtersAccordion">
+      <!-- Secciones de filtros se insertan dinámicamente -->
+    </div>
+  </div>
+
+  <!-- Botón inferior -->
+  <div class="filter-footer">
+    <button id="applyFiltersBtn" class="btn btn-primary w-100">
+      <i class="bi bi-funnel"></i> Aplicar filtros
+    </button>
   </div>
 </div>
-	    
 	
 	    <div class="mb-3">
 	      <label for="groupBySelect">Clasificar por:</label>
